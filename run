@@ -1,0 +1,84 @@
+#! /bin/bash
+#
+#
+FLYWHEEL_BASE=/flywheel/v0
+CONTAINER='[scitran/dcm2niix]'
+OUTPUT_DIR=$FLYWHEEL_BASE/output
+INPUT_DIR=$FLYWHEEL_BASE/input/source
+
+
+# Check for inputs
+if [[ "$(ls -A $INPUT_DIR)" ]] ; then
+    echo "$CONTAINER  Starting..."
+else
+    echo "$CONTAINER  Input directory is empty:"
+    exit 1
+fi
+
+
+# Make sure that /output directory is empty
+if [ "$(ls -A $OUTPUT_DIR)" ]; then
+    echo -e "$CONTAINER  $OUTPUT_DIR is not Empty! Please provide an empty directory and mount at '$OUTPUT_DIR'."
+    exit 1
+fi
+
+
+# Get the path to the first input_file
+input_file=`find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1`
+
+
+# The directory that will be sent to dcm2niix
+dicom_dir=''
+
+
+# Depending on the input_file type, unzip, gunzip, or pass
+if [[ "$input_file" == *.zip ]] ; then
+
+    echo "$CONTAINER  Unzipping $input_file"
+    unzip -q "$input_file" -d $INPUT_DIR
+
+    # Check for unzipped directory in input dir
+    dicom_dir=$(find $INPUT_DIR/* -not -path '*/\.*' -type d | head -1)
+
+    # Check for PAR/REC
+    if [[ -z $dicom_dir ]]; then
+        dicom_dir=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
+    fi
+
+    # DICOM files
+    if [[ -z $dicom_dir ]]; then
+        dicom_dir=$(find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1)
+    fi
+
+elif [[ "$input_file" == *.gz ]]; then
+    cd $INPUT_DIR
+    echo "$CONTAINER  Gunzipping $input_file"
+    gunzip -q "$input_file"
+    dicom_dir=$(basename "$input_file" .gz)
+
+else
+    # Assume a directory containing dicoms was mounted in and pass it on
+    dicom_dir=$INPUT_DIR
+fi
+
+
+# Run the dcm2niix algorithm
+echo -e "$CONTAINER  running..."
+dcm2niix $@ -o "$OUTPUT_DIR" -z y "$dicom_dir" &> /dev/null
+
+
+# Get a list of the files in the output directory
+outputs=`find $OUTPUT_DIR -not -path '*/\.*' -type f -name "*"`
+
+
+# If output files exist, then generate metadata, if not exit.
+if [ -z "$outputs" ] ; then
+    echo "$CONTAINER  No results found in output directory... Exiting(1)!"
+    exit 1
+else
+    chmod -R 777 $OUTPUT_DIR
+    $FLYWHEEL_BASE/metadata_create.py $OUTPUT_DIR $CONTAINER
+    echo -e "$CONTAINER  Success! Wrote:\n`ls $OUTPUT_DIR`"
+fi
+
+exit 0
