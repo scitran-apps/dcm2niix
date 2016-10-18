@@ -4,7 +4,7 @@
 FLYWHEEL_BASE=/flywheel/v0
 CONTAINER='[scitran/dcm2niix]'
 OUTPUT_DIR=$FLYWHEEL_BASE/output
-INPUT_DIR=$FLYWHEEL_BASE/input/source
+INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix
 
 
 # Check for inputs
