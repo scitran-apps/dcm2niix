@@ -18,7 +18,7 @@ To build the image, either download the files from this repo or clone the repo:
 To run dcm2niix from this image you can do the following:
 ```
 docker run --rm -ti \
-    -v </path/to/input/data>:/flywheel/v0/input/source \
+    -v </path/to/input/data>:/flywheel/v0/input/dcm2niix \
     -v </path/to/output>:/flywheel/v0/output \
     scitran/dcm2niix <optional_flags>
 ```
