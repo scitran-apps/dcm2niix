@@ -9,7 +9,13 @@
 	"license":  "BSD-2-Clause",
 	"flywheel": "0",
 	"version":  "0.0.3",
-	"config": {},
+	"config": {
+		"decompress_dicoms": {
+			"default": false,
+			"type": "boolean",
+			"description": "Decompress dicom files prior to conversion. This will perform decompression using gdcmconv --raw and subsequently perform conversion using dcm2niix. [DEFAULT=FALSE]"
+		}
+	},
 	"inputs": {
 		"dcm2niix": {
 			"base": "file",

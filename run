@@ -1,29 +1,29 @@
 #! /bin/bash
 #
 #
-FLYWHEEL_BASE=/flywheel/v0
 CONTAINER='[scitran/dcm2niix]'
+echo -e "$CONTAINER  running..."
+
+# Configure paths
+FLYWHEEL_BASE=/flywheel/v0
 OUTPUT_DIR=$FLYWHEEL_BASE/output
 INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix
+CONFIG_FILE=$FLYWHEEL_BASE/config.json
 
 
-# Check for inputs
-if [[ "$(ls -A $INPUT_DIR)" ]] ; then
-    echo "$CONTAINER  Starting..."
+# If the config file does not exist (local run) then parse the config options
+# and values from the manifest
+if [[ ! -f $CONFIG_FILE ]]; then
+  CONFIG_FILE=$FLYWHEEL_BASE/manifest.json
+  # Parse config file to ENV Vars from manifest (note default value is grabbed)
+  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value.default)"' $CONFIG_FILE)
 else
-    echo "$CONTAINER  Input directory is empty:"
-    exit 1
+  # Parse config file to ENV Vars from config
+  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value)"' $CONFIG_FILE)
 fi
 
 
-# Make sure that /output directory is empty
-if [ "$(ls -A $OUTPUT_DIR)" ]; then
-    echo -e "$CONTAINER  $OUTPUT_DIR is not Empty! Please provide an empty directory and mount at '$OUTPUT_DIR'."
-    exit 1
-fi
-
-
-# Get the path to the first input_file
+# Get the path to the input_file (should only be a single file in the input dir)
 input_file=`find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1`
 
 
@@ -61,23 +61,34 @@ else
     dicom_dir=$INPUT_DIR
 fi
 
+# Decompression of dicom files
+if [[ $config_decompress_dicoms == 'true' ]]; then
+  RAW_DIR=$dicom_dir/raw
+  mkdir $RAW_DIR
+  gdcmconv --raw $dicom_dir $RAW_DIR
+  if [[ $? == 0 ]]; then
+    dicom_dir=$RAW_DIR
+  else
+    echo "Error decompressing dicoms!"
+    exit 1
+  fi
+fi
+
 
 # Run the dcm2niix algorithm
-echo -e "$CONTAINER  running..."
-dcm2niix $@ -o "$OUTPUT_DIR" -z y "$dicom_dir" &> /dev/null
+dcm2niix $@ -o "$OUTPUT_DIR" -z y "$dicom_dir"
 
 
 # Get a list of the files in the output directory
 outputs=`find $OUTPUT_DIR -not -path '*/\.*' -type f -name "*"`
 
 
-# If output files exist, then generate metadata, if not exit.
+# If output files exist, happily exit, if not exit 1.
 if [ -z "$outputs" ] ; then
     echo "$CONTAINER  No results found in output directory... Exiting(1)!"
     exit 1
 else
     chmod -R 777 $OUTPUT_DIR
-    $FLYWHEEL_BASE/metadata_create.py $OUTPUT_DIR $CONTAINER
     echo -e "$CONTAINER  Success! Wrote:\n`ls $OUTPUT_DIR`"
 fi
 
