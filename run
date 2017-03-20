@@ -4,11 +4,30 @@
 CONTAINER='[scitran/dcm2niix]'
 echo -e "$CONTAINER  running..."
 
+##############################################################################
 # Configure paths
 FLYWHEEL_BASE=/flywheel/v0
 OUTPUT_DIR=$FLYWHEEL_BASE/output
 INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix
 CONFIG_FILE=$FLYWHEEL_BASE/config.json
+input_file=`find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1`
+dicom_dir='' # The directory that will be sent to dcm2niix
+
+##############################################################################
+# Parse configuration
+# usage: dcm2niix [options] <in_folder>
+#  Options :
+#   -b : BIDS sidecar (y/n, default n)
+#   -f : filename (%a=antenna  (coil) number, %c=comments, %d=description, %e echo number, %f=folder name, %i ID of patient, %m=manufacturer, %n=name of patient, %p=protocol, %s=series number, %t=time
+# , %u=acquisition number, %z sequence name; default '%i_%p_%t_%s')
+#   -h : show help
+#   -m : merge 2D slices from same series regardless of study time, echo, coil, orientation, etc. (y/n, default n)
+#   -o : output directory (omit to save to input folder)
+#   -s : single file mode, do not convert other images in folder (y/n, default n)
+#   -t : text notes includes private patient details (y/n, default n)
+#   -v : verbose (y/n, default n)
+#   -x : crop (y/n, default n)
+#   -z : gz compress images (y/i/n, default y) [y=pigz, i=internal, n=no]
 
 
 # If the config file does not exist (local run) then parse the config options
@@ -18,20 +37,14 @@ if [[ ! -f $CONFIG_FILE ]]; then
   # Parse config file to ENV Vars from manifest (note default value is grabbed)
   eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value.default)"' $CONFIG_FILE)
 else
-  # Parse config file to ENV Vars from config
+  # Parse config file to ENV Vars from config (Flywheel gear run)
   eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value)"' $CONFIG_FILE)
 fi
 
+##############################################################################
+# Handle DICOM archive
 
-# Get the path to the input_file (should only be a single file in the input dir)
-input_file=`find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1`
-
-
-# The directory that will be sent to dcm2niix
-dicom_dir=''
-
-
-# Depending on the input_file type, unzip, gunzip, or pass
+# Depending on the input_file archive type, unzip, gunzip, or uncompressed
 if [[ "$input_file" == *.zip ]] ; then
 
     echo "$CONTAINER  Unzipping $input_file"
@@ -61,30 +74,46 @@ else
     dicom_dir=$INPUT_DIR
 fi
 
-# Decompression of dicom files
+##############################################################################
+# Decompression of dicom files. For some types of DIOCM files a compression can
+# be applied to the image data which will cause dcm2niix to fail. We use a method
+# recommended by Rorden below to decompress these images prior to conversion. See:
+# https://www.nitrc.org/plugins/mwiki/index.php/dcm2nii:MainPage#Transfer_Syntaxes_and_Compressed_Images
+
+# Check config for decompress option
 if [[ $config_decompress_dicoms == 'true' ]]; then
-  RAW_DIR=$dicom_dir/raw
-  mkdir $RAW_DIR
-  gdcmconv --raw $dicom_dir $RAW_DIR
-  if [[ $? == 0 ]]; then
-    dicom_dir=$RAW_DIR
-  else
-    echo "Error decompressing dicoms!"
-    exit 1
-  fi
+
+  # Get a list of the dicoms to be decompressed
+  echo $dicom_dir
+  dicom_files=$(find $dicom_dir -type f)
+
+  # Decompress with gcdmconv
+  echo -e "Decompressing DICOM files..."
+  for d in $dicom_files; do
+    gdcmconv --raw $d $d
+    if [[ $? != 0 ]]; then
+      echo -e "$CONTAINER Error decompressing dicoms!" && exit 1
+    fi
+  done
 fi
 
-
+##############################################################################
 # Run the dcm2niix algorithm
+
 dcm2niix $@ -o "$OUTPUT_DIR" -z y "$dicom_dir"
 
+if [[ $? != 0 ]]; then
+  echo -e "$CONTAINER Error converting dicoms!" && exit 1
+fi
+
+##############################################################################
+# Check outputs/permissions and Exit
 
 # Get a list of the files in the output directory
 outputs=`find $OUTPUT_DIR -not -path '*/\.*' -type f -name "*"`
 
-
 # If output files exist, happily exit, if not exit 1.
-if [ -z "$outputs" ] ; then
+if [[ -z "$outputs" ]] ; then
     echo "$CONTAINER  No results found in output directory... Exiting(1)!"
     exit 1
 else
