@@ -9,7 +9,7 @@ echo -e "$CONTAINER  running..."
 
 FLYWHEEL_BASE=/flywheel/v0
 OUTPUT_DIR=$FLYWHEEL_BASE/output
-INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix
+INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix_input
 CONFIG_FILE=$FLYWHEEL_BASE/config.json
 input_file=`find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1` # Could be par/rec
 dicom_dir='' # Initialize directory that will be sent to dcm2niix

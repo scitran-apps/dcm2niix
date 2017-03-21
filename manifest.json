@@ -17,37 +17,44 @@
 		},
 		"bids_sidecar": {
 			"description": "Output BIDS sidecar in JSON format. (y/n, default n)",
+			"type": "text",
 			"default": "n",
 			"id": "-b"
 		},
 		"merge2d": {
 			"description": "merge 2D slices from same series regardless of study time, echo, coil, orientation, etc. (y/n, default n)",
+			"type": "text",
 			"default": "n",
 			"id": "-m"
 		},
 		"text_notes_private": {
 			"description": "text notes includes private patient details (y/n, default n)",
+			"type": "text",
 			"default": "n",
 			"id": "-t"
 		},
 		"crop": {
 			"description": "Crop images (y/n, default n)",
+			"type": "text",
 			"default": "n",
 			"id": "-x"
 		},
 		"compress_nifti":{
 			"description": "Compress output NIfTI file. Options, y=pigz, i=internal, n=no. (y/i/n, default=y) ",
+			"type": "text",
 			"default": "y",
 			"id": "-z"
 		},
 		"filename": {
 			"description": "Determine how files are named: filename (%a=antenna (coil) number, %c=comments, %d=description, %e=echo number, %f=folder name, %i=ID of patient, %m=manufacturer, %n=name of patient, %p=protocol, %s=series number, %t=time, %u=acquisition number, %z=sequence name; [default='%i_%p_%t_%s'])",
+			"type": "text",
 			"default": "%i_%p_%t_%s",
 			"id": "-f"
 		}
 	},
 	"inputs": {
-		"dcm2niix": {
+		"dcm2niix_input": {
+			"description": "Input file for dcm2niix. This can be either a DICOM archive ('.dicom.zip'), an enhanced dicom file (gzipped or not, e.g., 'IM0001.gz', 'IM0001'), or a PAR/REC archive ('.parrec.zip')",
 			"base": "file",
 			"type": { "enum": [ "dicom", "parrec" ] }
 		}
