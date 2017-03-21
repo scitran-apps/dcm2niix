@@ -13,7 +13,7 @@ FROM neurodebian:trusty
 MAINTAINER Michael Perry <lmperry@stanford.edu>
 
 # Install packages
-RUN apt-get update \
+RUN apt-get update -qq \
     && apt-get install -y \
     dcm2niix=1:1.0.20170130-1~nd14.04+1 \
     libgdcm-tools \
@@ -25,9 +25,6 @@ RUN apt-get update \
 # Install jq to parse manifest
 RUN wget -N -qO- -O /usr/bin/jq http://stedolan.github.io/jq/download/linux64/jq
 RUN chmod +x /usr/bin/jq
-
-# Copy config for dcm2nii to default location
-COPY dcm2nii.ini /root/.dcm2nii.ini
 
 # Make directory for flywheel spec (v0)
 ENV FLYWHEEL /flywheel/v0

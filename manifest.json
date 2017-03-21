@@ -13,7 +13,37 @@
 		"decompress_dicoms": {
 			"default": false,
 			"type": "boolean",
-			"description": "Decompress dicom files prior to conversion. This will perform decompression using gdcmconv and subsequently perform conversion using dcm2niix. [DEFAULT=false]"
+			"description": "Decompress dicom files prior to conversion. This will perform decompression using gdcmconv and subsequently perform conversion using dcm2niix. (true/false, default=false)"
+		},
+		"bids_sidecar": {
+			"description": "Output BIDS sidecar in JSON format. (y/n, default n)",
+			"default": "n",
+			"id": "-b"
+		},
+		"merge2d": {
+			"description": "merge 2D slices from same series regardless of study time, echo, coil, orientation, etc. (y/n, default n)",
+			"default": "n",
+			"id": "-m"
+		},
+		"text_notes_private": {
+			"description": "text notes includes private patient details (y/n, default n)",
+			"default": "n",
+			"id": "-t"
+		},
+		"crop": {
+			"description": "Crop images (y/n, default n)",
+			"default": "n",
+			"id": "-x"
+		},
+		"compress_nifti":{
+			"description": "Compress output NIfTI file. Options, y=pigz, i=internal, n=no. (y/i/n, default=y) ",
+			"default": "y",
+			"id": "-z"
+		},
+		"filename": {
+			"description": "Determine how files are named: filename (%a=antenna (coil) number, %c=comments, %d=description, %e=echo number, %f=folder name, %i=ID of patient, %m=manufacturer, %n=name of patient, %p=protocol, %s=series number, %t=time, %u=acquisition number, %z=sequence name; [default='%i_%p_%t_%s'])",
+			"default": "%i_%p_%t_%s",
+			"id": "-f"
 		}
 	},
 	"inputs": {

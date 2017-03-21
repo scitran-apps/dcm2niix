@@ -6,43 +6,37 @@ echo -e "$CONTAINER  running..."
 
 ##############################################################################
 # Configure paths
+
 FLYWHEEL_BASE=/flywheel/v0
 OUTPUT_DIR=$FLYWHEEL_BASE/output
 INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix
 CONFIG_FILE=$FLYWHEEL_BASE/config.json
-input_file=`find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1`
-dicom_dir='' # The directory that will be sent to dcm2niix
+input_file=`find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1` # Could be par/rec
+dicom_dir='' # Initialize directory that will be sent to dcm2niix
 
 ##############################################################################
 # Parse configuration
-# usage: dcm2niix [options] <in_folder>
-#  Options :
-#   -b : BIDS sidecar (y/n, default n)
-#   -f : filename (%a=antenna  (coil) number, %c=comments, %d=description, %e echo number, %f=folder name, %i ID of patient, %m=manufacturer, %n=name of patient, %p=protocol, %s=series number, %t=time
-# , %u=acquisition number, %z sequence name; default '%i_%p_%t_%s')
-#   -h : show help
-#   -m : merge 2D slices from same series regardless of study time, echo, coil, orientation, etc. (y/n, default n)
-#   -o : output directory (omit to save to input folder)
-#   -s : single file mode, do not convert other images in folder (y/n, default n)
-#   -t : text notes includes private patient details (y/n, default n)
-#   -v : verbose (y/n, default n)
-#   -x : crop (y/n, default n)
-#   -z : gz compress images (y/i/n, default y) [y=pigz, i=internal, n=no]
-
 
 # If the config file does not exist (local run) then parse the config options
 # and values from the manifest
 if [[ ! -f $CONFIG_FILE ]]; then
+  # Parse config file and cast the values to ENV Vars from manifest
+  # (note default value is grabbed)
   CONFIG_FILE=$FLYWHEEL_BASE/manifest.json
-  # Parse config file to ENV Vars from manifest (note default value is grabbed)
   eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value.default)"' $CONFIG_FILE)
+
 else
-  # Parse config file to ENV Vars from config (Flywheel gear run)
+  # Parse config file and cast vals to ENV Vars from config (Flywheel gear run)
   eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value)"' $CONFIG_FILE)
 fi
 
 ##############################################################################
 # Handle DICOM archive
+
+if [[ -z "$input_file" ]] ; then
+  echo -e "$CONTAINER No input file was found!"
+  exit 1
+fi
 
 # Depending on the input_file archive type, unzip, gunzip, or uncompressed
 if [[ "$input_file" == *.zip ]] ; then
@@ -100,17 +94,25 @@ fi
 ##############################################################################
 # Run the dcm2niix algorithm
 
-dcm2niix $@ -o "$OUTPUT_DIR" -z y "$dicom_dir"
+dcm2niix -b ${config_bids_sidecar} \
+         -m ${config_merge2d} \
+         -t ${config_text_notes_private} \
+         -x ${config_text_notes_private} \
+         -z ${config_compress_nifti} \
+         -f ${config_filename} \
+         -o ${OUTPUT_DIR} \
+         ${dicom_dir}
 
 if [[ $? != 0 ]]; then
-  echo -e "$CONTAINER Error converting dicoms!" && exit 1
+  echo -e "$CONTAINER Error converting dicoms! Exit status = $?"
+  exit $?
 fi
 
 ##############################################################################
 # Check outputs/permissions and Exit
 
 # Get a list of the files in the output directory
-outputs=`find $OUTPUT_DIR -not -path '*/\.*' -type f -name "*"`
+outputs=`find $OUTPUT_DIR -not -path '*/\.*' -type f -name "*nii*"`
 
 # If output files exist, happily exit, if not exit 1.
 if [[ -z "$outputs" ]] ; then
