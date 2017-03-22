@@ -46,9 +46,9 @@
 			"id": "-z"
 		},
 		"filename": {
-			"description": "Determine how files are named: filename (%a=antenna (coil) number, %c=comments, %d=description, %e=echo number, %f=folder name, %i=ID of patient, %m=manufacturer, %n=name of patient, %p=protocol, %s=series number, %t=time, %u=acquisition number, %z=sequence name; [default='%i_%p_%t_%s'])",
+			"description": "Determine how files are named: filename (%a=antenna (coil) number, %c=comments, %d=description, %e=echo number, %f=folder name, %i=ID of patient, %m=manufacturer, %n=name of patient, %p=protocol, %s=series number, %t=time, %u=acquisition number, %z=sequence name; [default='%f'])",
 			"type": "string",
-			"default": "%i_%p_%t_%s",
+			"default": "%f",
 			"id": "-f"
 		}
 	},
