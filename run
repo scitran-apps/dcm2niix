@@ -92,6 +92,17 @@ if [[ $config_decompress_dicoms == 'true' ]]; then
 fi
 
 ##############################################################################
+# Remove .dicom from dicom_dir for filename purposes
+
+if [[ -d ${dicom_dir} ]]; then
+  NEW_DIR=$(dirname ${dicom_dir})/$(basename ${dicom_dir} .dicom)
+  if [[ ${dicom_dir} != ${NEW_DIR} ]]; then
+    mv ${dicom_dir} ${NEW_DIR}
+    dicom_dir=${NEW_DIR}
+  fi
+fi
+
+##############################################################################
 # Run the dcm2niix algorithm
 
 dcm2niix -b ${config_bids_sidecar} \
