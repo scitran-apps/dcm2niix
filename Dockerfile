@@ -2,7 +2,7 @@
 #
 # Example usage:
 #   docker run --rm -ti \
-#       -v <someDirWithDicoms>:/flywheel/v0/input/source \
+#       -v <someDirWithDicoms>:/flywheel/v0/input/dcm2niix \
 #       -v <emptyOutputFolder>:/flywheel/v0/output \
 #       scitran/dcm2niix <optional_flags>
 #
@@ -13,17 +13,18 @@ FROM neurodebian:trusty
 MAINTAINER Michael Perry <lmperry@stanford.edu>
 
 # Install packages
-RUN apt-get update \
+RUN apt-get update -qq \
     && apt-get install -y \
-    python \
-    dcm2niix \
-    pigz \
+    dcm2niix=1:1.0.20170130-1~nd14.04+1 \
+    libgdcm-tools=2.2.4-1.1ubuntu4 \
     unzip \
-    gzip
+    pigz \
+    gzip \
+    wget
 
-ENV DCM2NIIDIR /root/.dcm2nii
-RUN mkdir -p $DCM2NIIDIR
-COPY dcm2nii.ini $DCM2NIIDIR/dcm2nii.ini
+# Install jq to parse manifest
+RUN wget -N -qO- -O /usr/bin/jq http://stedolan.github.io/jq/download/linux64/jq
+RUN chmod +x /usr/bin/jq
 
 # Make directory for flywheel spec (v0)
 ENV FLYWHEEL /flywheel/v0
@@ -31,8 +32,6 @@ RUN mkdir -p ${FLYWHEEL}
 
 # Add executables
 COPY run ${FLYWHEEL}/run
-ADD https://raw.githubusercontent.com/scitran/utilities/daf5ebc7dac6dde1941ca2a6588cb6033750e38c/metadata_from_gear_output.py ${FLYWHEEL}/metadata_create.py
-RUN chmod +x ${FLYWHEEL}/metadata_create.py
 
 # Add manifest
 COPY manifest.json ${FLYWHEEL}/manifest.json

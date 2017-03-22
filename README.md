@@ -3,22 +3,29 @@
 
 ## scitran/dcm2niix
 
-This dockerfile will create a docker image that can execute ```dcm2niix```.
+Build context for a [Flywheel Gear](https://github.com/flywheel-io/gears/tree/master/spec) to execute ```dcm2niix```.
 
-## Options
-Options are set in `dcm2nii.ini`. Current defaults are set and copied into the container on build.
+### Description
+Chris Rorden's [dcm2niiX](https://www.nitrc.org/projects/dcm2nii) is a popular tool for converting images from the complicated formats used by scanner manufacturers (DICOM, PAR/REC) to the simple NIfTI format used by many scientific tools. dcm2niix works for all modalities (CT, MRI, PET, SPECT) and sequence types.
 
 ### Build the Image
 To build the image, either download the files from this repo or clone the repo:
 ```
-./build.sh
+docker build --no-cache -t scitran/dcm2niix
 ```
 
-### Example Usage ###
-To run dcm2niix from this image you can do the following:
+### Inputs
+The input to this gear can be either a zip, a tgz, or a directory containing DICOMs.
+
+### Options
+Default options are set in `manifest.json` and copied to the container on build. Defaults are then loaded by the `run` script when the algorithm is executed.
+
+### Example Usage
+To run dcm2niix locally from this container you can do the following:
+*Ensure your input file is in it's own directory.*
 ```
 docker run --rm -ti \
-    -v </path/to/input/data>:/flywheel/v0/input/dcm2niix \
+    -v </path/to/input/data_dir>:/flywheel/v0/input/dcm2niix_input \
     -v </path/to/output>:/flywheel/v0/output \
-    scitran/dcm2niix <optional_flags>
+    scitran/dcm2niix
 ```
