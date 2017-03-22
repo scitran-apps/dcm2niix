@@ -1,6 +1,7 @@
 #! /bin/bash
 #
 #
+
 CONTAINER='[scitran/dcm2niix]'
 echo -e "$CONTAINER  running..."
 
@@ -11,108 +12,129 @@ FLYWHEEL_BASE=/flywheel/v0
 OUTPUT_DIR=$FLYWHEEL_BASE/output
 INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix_input
 CONFIG_FILE=$FLYWHEEL_BASE/config.json
-input_file=`find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1` # Could be par/rec
-dicom_dir='' # Initialize directory that will be sent to dcm2niix
 
 ##############################################################################
 # Parse configuration
 
-# If the config file does not exist (local run) then parse the config options
-# and values from the manifest
-if [[ ! -f $CONFIG_FILE ]]; then
-  # Parse config file and cast the values to ENV Vars from manifest
-  # (note default value is grabbed)
+# If the config file does not exist (i.e., local run) then parse the config
+# options and values from the manifest. This process will result in a number of
+# ENV vars being cast from the manifest.json or config.json file. Those variables
+# can be found in the manifest.json file within the `config` map. They are
+# listed here (with 'config' prefixed) for clarity:
+#   ${config_bids_sidecar}
+#   ${config_merge2d}
+#   ${config_text_notes_private}
+#   ${config_crop}
+#   ${config_compress_nifti}
+#   ${config_filename}
+#
+# If config.json exists, then we parse config file and cast vals to ENV Vars
+# (Flywheel gear run). Otherwise we parse manifest.json and cast the values to
+# ENV Vars from manifest (note value.default is used to grab the configured
+# defaults)
+
+if [[ -f $CONFIG_FILE ]]; then
+  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value)"' $CONFIG_FILE)
+else
   CONFIG_FILE=$FLYWHEEL_BASE/manifest.json
   eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value.default)"' $CONFIG_FILE)
-
-else
-  # Parse config file and cast vals to ENV Vars from config (Flywheel gear run)
-  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value)"' $CONFIG_FILE)
 fi
 
 ##############################################################################
-# Handle DICOM archive
+# Handle INPUT.
+
+# The input to this Gear can be either a zip, a tgz, or a mounted volume
+# contianing DICOMs. Below we handle all those cases.
+
+input_file=$(find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1)
+dicom_input=''
 
 if [[ -z "$input_file" ]] ; then
   echo -e "$CONTAINER No input file was found!"
   exit 1
 fi
 
-# Depending on the input_file archive type, unzip, gunzip, or uncompressed
+# Prepare inputs: unzip, gunzip, or uncompressed
 if [[ "$input_file" == *.zip ]] ; then
 
-    echo "$CONTAINER  Unzipping $input_file"
-    unzip -q "$input_file" -d $INPUT_DIR
+  echo "$CONTAINER  Unzipping $input_file"
+  unzip -q "$input_file" -d $INPUT_DIR
 
-    # Check for unzipped directory in input dir
-    dicom_dir=$(find $INPUT_DIR/* -not -path '*/\.*' -type d | head -1)
+  # Find unzipped directory in input dir
+  dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -type d | head -1)
 
-    # Check for PAR/REC
-    if [[ -z "$dicom_dir" ]]; then
-        dicom_dir=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
-    fi
+  # If there is no unzipped directory, check for PAR/REC files
+  if [[ -z "$dicom_input" ]]; then
+      dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
+  fi
 
-    # DICOM files
-    if [[ -z "$dicom_dir" ]]; then
-        dicom_dir=$(find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1)
-    fi
+  # Zip bomb: Set dicom_input to INPUT_DIR
+  if [[ -z "$dicom_input" ]]; then
+    dicom_input=$INPUT_DIR
+  fi
 
 elif [[ "$input_file" == *.gz ]]; then
-    cd $INPUT_DIR
-    echo "$CONTAINER  Gunzipping $input_file"
-    gunzip -q "$input_file"
-    dicom_dir=$(basename "$input_file" .gz)
+  cd $INPUT_DIR
+  echo "$CONTAINER  Gunzipping $input_file"
+  gunzip -q "$input_file"
+  dicom_input=$(basename "$input_file" .gz)
 
 else
-    # Assume a directory containing dicoms was mounted in and pass it on
-    dicom_dir=$INPUT_DIR
+  # Assume a directory containing dicoms was mounted in and pass it on (local run)
+  dicom_input=$INPUT_DIR
 fi
 
 ##############################################################################
-# Decompression of dicom files. For some types of DIOCM files a compression can
-# be applied to the image data which will cause dcm2niix to fail. We use a method
-# recommended by Rorden below to decompress these images prior to conversion. See:
+# Decompression of dicom files.
+
+# For some types of DIOCM files compression can be applied to the image data which
+# will cause dcm2niix to fail. We use a method recommended by Rorden below to
+# decompress these images prior to conversion. See:
 # https://www.nitrc.org/plugins/mwiki/index.php/dcm2nii:MainPage#Transfer_Syntaxes_and_Compressed_Images
 
 # Check config for decompress option
 if [[ $config_decompress_dicoms == 'true' ]]; then
 
   # Get a list of the dicoms to be decompressed
-  echo $dicom_dir
-  dicom_files=$(find "$dicom_dir" -type f)
+  dicom_files=$(find "$dicom_input" -type f)
 
-  # Decompress with gcdmconv
-  echo -e "Decompressing DICOM files..."
+  # Decompress with gcdmconv in place (overwriting the compressed dicom)
+  echo -e "$CONTAINER Decompressing DICOM files..."
   for d in $dicom_files; do
     gdcmconv --raw "$d" "$d"
     if [[ $? != 0 ]]; then
-      echo -e "$CONTAINER Error decompressing dicoms!" && exit 1
+      echo -e "$CONTAINER Error decompressing dicoms!"
+      exit 1
     fi
   done
 fi
 
 ##############################################################################
-# Remove .dicom from dicom_dir for filename purposes
+# Sanitize dicom_input name
 
-if [[ -d "$dicom_dir" ]]; then
-  NEW_DIR=$(dirname "$dicom_dir")/$(basename "$dicom_dir" .dicom)
-  if [[ "$dicom_dir" != "$NEW_DIR" ]]; then
-    mv "$dicom_dir" "$NEW_DIR"
-    dicom_dir="$NEW_DIR"
+# Remove .dicom from dicom_input (if it is a direcotry) for output filename.
+# Otherwise with default behavior (including the input folder in the output
+# filename, we have a '.dicom.nii.gz' extension, which is silly.
+
+if [[ -d "$dicom_input" ]]; then
+  NEW_DIR=$(dirname "$dicom_input")/$(basename "$dicom_input" .dicom)
+  if [[ "$dicom_input" != "$NEW_DIR" ]]; then
+    mv "$dicom_input" "$NEW_DIR"
+    dicom_input="$NEW_DIR"
   fi
 fi
 
 ##############################################################################
-# Run the dcm2niix algorithm
+# Run the dcm2niix algorithm passing forth the ENV vars with config
 
 dcm2niix -b ${config_bids_sidecar} \
          -m ${config_merge2d} \
          -t ${config_text_notes_private} \
-         -x ${config_text_notes_private} \
+         -x ${config_crop} \
          -z ${config_compress_nifti} \
          -f ${config_filename} \
          -o ${OUTPUT_DIR} \
-         "$dicom_dir"
+         "$dicom_input"
 
 if [[ $? != 0 ]]; then
   echo -e "$CONTAINER Error converting dicoms! Exit status = $?"
@@ -126,12 +148,12 @@ fi
 outputs=`find $OUTPUT_DIR -not -path '*/\.*' -type f -name "*nii*"`
 
 # If output files exist, happily exit, if not exit 1.
-if [[ -z "$outputs" ]] ; then
-    echo "$CONTAINER  No results found in output directory... Exiting(1)!"
-    exit 1
+if [[ -n "$outputs" ]] ; then
+  chmod -R 777 $OUTPUT_DIR
+  echo -e "$CONTAINER  Success! Wrote:\n`ls $OUTPUT_DIR`"
 else
-    chmod -R 777 $OUTPUT_DIR
-    echo -e "$CONTAINER  Success! Wrote:\n`ls $OUTPUT_DIR`"
+  echo "$CONTAINER  No results found in output directory... Exiting(1)!"
+  exit 1
 fi
 
 exit 0
