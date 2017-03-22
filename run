@@ -48,12 +48,12 @@ if [[ "$input_file" == *.zip ]] ; then
     dicom_dir=$(find $INPUT_DIR/* -not -path '*/\.*' -type d | head -1)
 
     # Check for PAR/REC
-    if [[ -z $dicom_dir ]]; then
+    if [[ -z "$dicom_dir" ]]; then
         dicom_dir=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
     fi
 
     # DICOM files
-    if [[ -z $dicom_dir ]]; then
+    if [[ -z "$dicom_dir" ]]; then
         dicom_dir=$(find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1)
     fi
 
@@ -79,12 +79,12 @@ if [[ $config_decompress_dicoms == 'true' ]]; then
 
   # Get a list of the dicoms to be decompressed
   echo $dicom_dir
-  dicom_files=$(find $dicom_dir -type f)
+  dicom_files=$(find "$dicom_dir" -type f)
 
   # Decompress with gcdmconv
   echo -e "Decompressing DICOM files..."
   for d in $dicom_files; do
-    gdcmconv --raw $d $d
+    gdcmconv --raw "$d" "$d"
     if [[ $? != 0 ]]; then
       echo -e "$CONTAINER Error decompressing dicoms!" && exit 1
     fi
@@ -94,11 +94,11 @@ fi
 ##############################################################################
 # Remove .dicom from dicom_dir for filename purposes
 
-if [[ -d ${dicom_dir} ]]; then
-  NEW_DIR=$(dirname ${dicom_dir})/$(basename ${dicom_dir} .dicom)
-  if [[ ${dicom_dir} != ${NEW_DIR} ]]; then
-    mv ${dicom_dir} ${NEW_DIR}
-    dicom_dir=${NEW_DIR}
+if [[ -d "$dicom_dir" ]]; then
+  NEW_DIR=$(dirname "$dicom_dir")/$(basename "$dicom_dir" .dicom)
+  if [[ "$dicom_dir" != "$NEW_DIR" ]]; then
+    mv "$dicom_dir" "$NEW_DIR"
+    dicom_dir="$NEW_DIR"
   fi
 fi
 
@@ -112,7 +112,7 @@ dcm2niix -b ${config_bids_sidecar} \
          -z ${config_compress_nifti} \
          -f ${config_filename} \
          -o ${OUTPUT_DIR} \
-         ${dicom_dir}
+         "$dicom_dir"
 
 if [[ $? != 0 ]]; then
   echo -e "$CONTAINER Error converting dicoms! Exit status = $?"
