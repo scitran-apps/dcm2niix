@@ -16,7 +16,7 @@ MAINTAINER Michael Perry <lmperry@stanford.edu>
 RUN apt-get update -qq \
     && apt-get install -y \
     dcm2niix=1:1.0.20170130-1~nd14.04+1 \
-    libgdcm-tools \
+    libgdcm-tools=2.2.4-1.1ubuntu4 \
     unzip \
     pigz \
     gzip \
