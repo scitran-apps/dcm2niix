@@ -2,7 +2,7 @@
 #
 # Example usage:
 #   docker run --rm -ti \
-#       -v <someDirWithDicoms>:/flywheel/v0/input/dcm2niix \
+#       -v <someDirWithDicoms>:/flywheel/v0/input/dcm2niix_input \
 #       -v <emptyOutputFolder>:/flywheel/v0/output \
 #       scitran/dcm2niix <optional_flags>
 #
@@ -20,7 +20,8 @@ RUN apt-get update -qq \
     unzip \
     pigz \
     gzip \
-    wget
+    wget \
+    vtk-dicom-tools
 
 # Install jq to parse manifest
 RUN wget -N -qO- -O /usr/bin/jq http://stedolan.github.io/jq/download/linux64/jq
