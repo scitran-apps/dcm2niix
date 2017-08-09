@@ -124,9 +124,25 @@ if [[ -d "$dicom_input" ]]; then
   fi
 fi
 
+
+##############################################################################
+# Use dicomdump to check for Pixel Data dicom tag (7FE0,0010)
+#  If no Pixel Data within ANY of the input files, algorithm will not execute and exit with a 0
+# Using dicomdump command from vtk-dicom-tools (https://github.com/dgobbi/vtk-dicom/wiki/Command-Line-Tools)
+
+# Get each file in unzipped dir
+input_files=`ls $dicom_input`
+for infile in $input_files
+do
+    pixeldata_check=$(dicomdump $dicom_input/$infile | grep "(7FE0,0010)")
+    if ! [[ $pixeldata_check ]]; then
+        echo "No Pixel Data within input dataset. dcm2niix will not execute. Exiting(0)..."
+        exit 0
+    fi
+done
+
 ##############################################################################
 # Run the dcm2niix algorithm passing forth the ENV vars with config
-
 dcm2niix -b ${config_bids_sidecar} \
          -m ${config_merge2d} \
          -t ${config_text_notes_private} \
