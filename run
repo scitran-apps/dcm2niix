@@ -136,24 +136,17 @@ dcm2niix -b ${config_bids_sidecar} \
          -o ${OUTPUT_DIR} \
          "$dicom_input"
 
-if [[ $? != 0 ]]; then
-  echo -e "$CONTAINER Error converting dicoms! Exit status = $?"
-  exit $?
-fi
-
 ##############################################################################
 # Check outputs/permissions and Exit
 
-# Get a list of the files in the output directory
-outputs=`find $OUTPUT_DIR -not -path '*/\.*' -type f -name "*nii*"`
-
-# If output files exist, happily exit, if not exit 1.
-if [[ -n "$outputs" ]] ; then
+if [[ $? == 0 ]]; then
   chmod -R 777 $OUTPUT_DIR
   echo -e "$CONTAINER  Success! Wrote:\n`ls $OUTPUT_DIR`"
+  exit 0
+elif [[ $? == 2 ]]; then
+  echo -e "$CONTAINER No valid DICOM files found. Conversion not attempted."
+  exit 0
 else
-  echo "$CONTAINER  No results found in output directory... Exiting(1)!"
-  exit 1
+  echo -e "$CONTAINER Error converting DICOMs! Exit status = $?"
+  exit $?
 fi
-
-exit 0
