@@ -44,7 +44,7 @@ fi
 # Handle INPUT.
 
 # The input to this Gear can be either a zip, a tgz, or a mounted volume
-# contianing DICOMs. Below we handle all those cases.
+# containing DICOMs. Below we handle all those cases.
 
 input_file=$(find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1)
 dicom_input=''
@@ -80,12 +80,12 @@ elif [[ "$input_file" == *.gz ]]; then
   dicom_input=$(basename "$input_file" .gz)
 
 else
-  # Assume a directory containing dicoms was mounted in and pass it on (local run)
+  # Assume a directory containing dicoms was mounted in and pass it on (local docker execution)
   dicom_input=$INPUT_DIR
 fi
 
 ##############################################################################
-# Decompression of dicom files.
+# Decompression of DICOM files.
 
 # For some types of DIOCM files compression can be applied to the image data which
 # will cause dcm2niix to fail. We use a method recommended by Rorden below to
@@ -99,11 +99,11 @@ if [[ $config_decompress_dicoms == 'true' ]]; then
   dicom_files=$(find "$dicom_input" -type f)
 
   # Decompress with gcdmconv in place (overwriting the compressed dicom)
-  echo -e "$CONTAINER Decompressing DICOM files..."
+  echo -e "$CONTAINER  Decompressing DICOM files..."
   for d in $dicom_files; do
     gdcmconv --raw "$d" "$d"
     if [[ $? != 0 ]]; then
-      echo -e "$CONTAINER Error decompressing dicoms!"
+      echo -e "$CONTAINER  Error decompressing DICOMs!"
       exit 1
     fi
   done
@@ -112,9 +112,9 @@ fi
 ##############################################################################
 # Sanitize dicom_input name
 
-# Remove .dicom from dicom_input (if it is a direcotry) for output filename.
+# Remove '.dicom' from dicom_input (if it's a directory) for output filename.
 # Otherwise with default behavior (including the input folder in the output
-# filename, we have a '.dicom.nii.gz' extension, which is silly.
+# filename) we have a '.dicom.nii.gz' extension, which is silly.
 
 if [[ -d "$dicom_input" ]]; then
   NEW_DIR=$(dirname "$dicom_input")/$(basename "$dicom_input" .dicom)
@@ -136,17 +136,19 @@ dcm2niix -b ${config_bids_sidecar} \
          -o ${OUTPUT_DIR} \
          "$dicom_input"
 
-##############################################################################
-# Check outputs/permissions and Exit
+dcm2niix_exit_code=$?
 
-if [[ $? == 0 ]]; then
+##############################################################################
+# Check exit status/outputs/permissions and exit
+
+if [[ $dcm2niix_exit_code == 0 ]]; then
   chmod -R 777 $OUTPUT_DIR
   echo -e "$CONTAINER  Success! Wrote:\n`ls $OUTPUT_DIR`"
   exit 0
-elif [[ $? == 2 ]]; then
-  echo -e "$CONTAINER No valid DICOM files found. Conversion not attempted."
+elif [[ $dcm2niix_exit_code == 2 ]]; then
+  echo -e "$CONTAINER  No valid DICOM files found (dcm2niix exit status = $dcm2niix_exit_code). Conversion was not attempted. Exiting(0)."
   exit 0
 else
-  echo -e "$CONTAINER Error converting DICOMs! Exit status = $?"
-  exit $?
+  echo -e "$CONTAINER  Error converting DICOMs! Exit status = $dcm2niix_exit_code"
+  exit $dcm2niix_exit_code
 fi
