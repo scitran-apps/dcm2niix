@@ -25,7 +25,8 @@ RUN apt-get update -qq \
     unzip \
     pigz \
     gzip \
-    wget
+    wget \
+    jq
 
 # Compile DCM2NIIX from source
 ENV DCMCOMMIT=7fb7bcc56348f3a61012bba851bfa11057e55dc1
@@ -35,13 +36,9 @@ RUN cmake -DUSE_OPENJPEG=ON ../ && \
     make && \
     make install
 
-# Install jq to parse manifest
-RUN wget -N -qO- -O /usr/bin/jq http://stedolan.github.io/jq/download/linux64/jq
-RUN chmod +x /usr/bin/jq
-
 # Make directory for flywheel spec (v0)
 ENV FLYWHEEL /flywheel/v0
-RUN mkdir -p ${FLYWHEEL}
+WORKDIR ${FLYWHEEL}
 
 # Add executables
 COPY run ${FLYWHEEL}/run
