@@ -50,11 +50,35 @@
       "type": "string",
       "default": "%f",
       "id": "-f"
+    },
+    "anonymize_bids": {
+      "description": "Anonymize BIDS (y/n, default n)",
+      "type": "string",
+      "default": "n",
+      "id": "-ba"
+    },
+    "ignore_derived": {
+      "description": "ignore derived, localizer and 2D images (y/n, default n)",
+      "type": "string",
+      "default": "n",
+      "id": "-i"
+    },
+    "philips_scaling": {
+      "description": "Philips precise float (not display) scaling (y/n, default y)",
+      "type": "string",
+      "default": "y",
+      "id": "-p"
+    },
+    "single_file_mode": {
+      "description": "single file mode, do not convert other images in folder (y/n, default n)",
+      "type": "string",
+      "default": "n",
+      "id": "-s"
     }
   },
   "inputs": {
     "dcm2niix_input": {
-      "description": "Input file for dcm2niix. This can be either a DICOM archive ('.dicom.zip'), an enhanced dicom file (gzipped or not, e.g., 'IM0001.gz', 'IM0001'), or a PAR/REC archive ('.parrec.zip')",
+      "description": "Input file for dcm2niix. This can be either a DICOM archive ('.dicom.zip'), an enhanced DICOM file (gzipped or not, e.g., 'IM0001.gz', 'IM0001'), or a PAR/REC archive ('.parrec.zip')",
       "base": "file",
       "type": {
         "enum": [

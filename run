@@ -127,13 +127,17 @@ fi
 ##############################################################################
 # Run the dcm2niix algorithm passing forth the ENV vars with config
 
-dcm2niix -b ${config_bids_sidecar} \
-         -m ${config_merge2d} \
-         -t ${config_text_notes_private} \
-         -x ${config_crop} \
-         -z ${config_compress_nifti} \
-         -f ${config_filename} \
-         -o ${OUTPUT_DIR} \
+dcm2niix -ba ${config_anonymize_bids} \
+         -b  ${config_bids_sidecar} \
+         -m  ${config_merge2d} \
+         -t  ${config_text_notes_private} \
+         -x  ${config_crop} \
+         -z  ${config_compress_nifti} \
+         -f  ${config_filename} \
+         -i  ${config_ignore_derived} \
+         -p  ${config_philips_scaling} \
+         -s  ${config_single_file_mode} \
+         -o  ${OUTPUT_DIR} \
          "$dicom_input"
 
 dcm2niix_exit_code=$?
