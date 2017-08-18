@@ -29,7 +29,7 @@ RUN apt-get update -qq \
     jq
 
 # Compile DCM2NIIX from source
-ENV DCMCOMMIT=7fb7bcc56348f3a61012bba851bfa11057e55dc1
+ENV DCMCOMMIT=efeddd8e06050599159e78dba43e33b3b58dce12
 RUN curl -#L  https://github.com/rordenlab/dcm2niix/archive/$DCMCOMMIT.zip | bsdtar -xf- -C /usr/local
 WORKDIR /usr/local/dcm2niix-${DCMCOMMIT}/build
 RUN cmake -DUSE_OPENJPEG=ON ../ && \
