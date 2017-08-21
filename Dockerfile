@@ -15,20 +15,30 @@ MAINTAINER Michael Perry <lmperry@stanford.edu>
 # Install packages
 RUN apt-get update -qq \
     && apt-get install -y \
-    dcm2niix=1:1.0.20170130-2~nd14.04+1 \
+    git \
+    curl \
+    build-essential \
+    cmake \
+    pkg-config \
     libgdcm-tools=2.2.4-1.1ubuntu4 \
+    bsdtar \
     unzip \
     pigz \
     gzip \
-    wget
+    wget \
+    jq
 
-# Install jq to parse manifest
-RUN wget -N -qO- -O /usr/bin/jq http://stedolan.github.io/jq/download/linux64/jq
-RUN chmod +x /usr/bin/jq
+# Compile DCM2NIIX from source
+ENV DCMCOMMIT=efeddd8e06050599159e78dba43e33b3b58dce12
+RUN curl -#L  https://github.com/rordenlab/dcm2niix/archive/$DCMCOMMIT.zip | bsdtar -xf- -C /usr/local
+WORKDIR /usr/local/dcm2niix-${DCMCOMMIT}/build
+RUN cmake -DUSE_OPENJPEG=ON ../ && \
+    make && \
+    make install
 
 # Make directory for flywheel spec (v0)
 ENV FLYWHEEL /flywheel/v0
-RUN mkdir -p ${FLYWHEEL}
+WORKDIR ${FLYWHEEL}
 
 # Add executables
 COPY run ${FLYWHEEL}/run
