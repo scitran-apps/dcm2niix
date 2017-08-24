@@ -6,7 +6,7 @@
 Build context for a [Flywheel Gear](https://github.com/flywheel-io/gears/tree/master/spec) to execute ```dcm2niix```.
 
 ### Description
-Chris Rorden's [dcm2niiX](https://www.nitrc.org/projects/dcm2nii) is a popular tool for converting images from the complicated formats used by scanner manufacturers (DICOM, PAR/REC) to the simple NIfTI format used by many scientific tools. dcm2niix works for all modalities (CT, MRI, PET, SPECT) and sequence types.
+Chris Rorden's [dcm2niix](https://github.com/rordenlab/dcm2niix) is a popular tool for converting images from the complicated formats used by scanner manufacturers (DICOM, PAR/REC) to the simple NIfTI format used by many scientific tools. dcm2niix works for all modalities (CT, MRI, PET, SPECT) and sequence types.
 
 ### Build the Image
 To build the image, either download the files from this repo or clone the repo:
