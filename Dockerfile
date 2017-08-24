@@ -2,9 +2,9 @@
 #
 # Example usage:
 #   docker run --rm -ti \
-#       -v <someDirWithDicoms>:/flywheel/v0/input/dcm2niix \
+#       -v <someDirWithDicoms>:/flywheel/v0/input/dcm2niix_input \
 #       -v <emptyOutputFolder>:/flywheel/v0/output \
-#       scitran/dcm2niix <optional_flags>
+#       scitran/dcm2niix
 #
 #
 
@@ -29,7 +29,7 @@ RUN apt-get update -qq \
     jq
 
 # Compile DCM2NIIX from source
-ENV DCMCOMMIT=efeddd8e06050599159e78dba43e33b3b58dce12
+ENV DCMCOMMIT=d54cf684605fb0743712dea1b54564efc260ea3a
 RUN curl -#L  https://github.com/rordenlab/dcm2niix/archive/$DCMCOMMIT.zip | bsdtar -xf- -C /usr/local
 WORKDIR /usr/local/dcm2niix-${DCMCOMMIT}/build
 RUN cmake -DUSE_OPENJPEG=ON ../ && \

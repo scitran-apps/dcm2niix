@@ -40,6 +40,17 @@ else
   eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value.default)"' $CONFIG_FILE)
 fi
 
+# Check for 3Dvol option in config
+if [[ ${config_3Dvol} == "true" ]]; then
+  config_compress_nifti=3;
+fi
+
+# Set filename config if 3D volumes will be output
+if [[ ${config_compress_nifti} == 3 ]]; then
+  echo "$CONTAINER  Outputs will be saved as uncompressed 3D volumes -- re-setting filename flag (-f %p_%s) to prevent overwriting."
+  config_filename=%p_%s
+fi
+
 ##############################################################################
 # Handle INPUT.
 
