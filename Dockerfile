@@ -36,12 +36,16 @@ RUN cmake -DUSE_OPENJPEG=ON ../ && \
     make && \
     make install
 
+# Install python for metadata generation
+RUN apt-get install -y python
+
 # Make directory for flywheel spec (v0)
 ENV FLYWHEEL /flywheel/v0
 WORKDIR ${FLYWHEEL}
 
 # Add executables
-COPY run ${FLYWHEEL}/run
+COPY run metadata.py ./
+RUN chmod +x run metadata.py
 
 # Add manifest
 COPY manifest.json ${FLYWHEEL}/manifest.json

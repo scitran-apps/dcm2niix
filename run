@@ -139,7 +139,7 @@ fi
 # Run the dcm2niix algorithm passing forth the ENV vars with config
 
 dcm2niix -ba ${config_anonymize_bids} \
-         -b  ${config_bids_sidecar} \
+         -b  y \
          -m  ${config_merge2d} \
          -t  ${config_text_notes_private} \
          -x  ${config_crop} \
@@ -153,12 +153,44 @@ dcm2niix -ba ${config_anonymize_bids} \
 
 dcm2niix_exit_code=$?
 
+
+##############################################################################
+# Generate file metadata from BIDS Sidecar
+
+# We will inject the information from the BIDS sidecar json file into the file
+# info map for each output file. First we check if the sidecar should be preserved,
+# based on the flag, then we execute the python code to generate it.
+TEMP_METADATA=/tmp/bids_metdata.json
+
+if [[ ${dcm2niix_exit_code} == 0 ]]; then
+  bids_sidecar_file=$(find $OUTPUT_DIR -type f -name "*.json")
+
+  if [[ -f "${bids_sidecar_file}" ]]; then
+    echo "${CONTAINER}  Generating metadata from BIDS Sidecar"
+    cat "${bids_sidecar_file}" > "${TEMP_METADATA}"
+
+    # If the user did not want the sidecar, then we remove it
+    if [[ ${config_bids_sidecar} == "n" ]] && [[ ${config_anonymize_bids} == "n" ]]; then
+      rm "${bids_sidecar_file}"
+    fi
+
+    # Generate metadata
+    /flywheel/v0/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
+
+  else
+    echo "${CONTAINER}  No BIDS Sidecar could be found. Metadata will not be generated."
+  fi
+else
+  echo "${CONTAINER}  DCM2NIIX did not return zero. Metadata will not be generated."
+fi
+
+
 ##############################################################################
 # Check exit status/outputs/permissions and exit
 
 if [[ $dcm2niix_exit_code == 0 ]]; then
   chmod -R 777 $OUTPUT_DIR
-  echo -e "$CONTAINER  Success! Wrote:\n`ls $OUTPUT_DIR`"
+  echo -e "$CONTAINER  Success!"
   exit 0
 elif [[ $dcm2niix_exit_code == 2 ]]; then
   echo -e "$CONTAINER  No valid DICOM files found (dcm2niix exit status = $dcm2niix_exit_code). Conversion was not attempted. Exiting(0)."
