@@ -48,7 +48,7 @@ def metadata_gen(outbase, bids_sidecar, config_file):
             with open(config_file) as config_f:
                 config = json.load(config_f)
             try:
-                classification = config['inputs']['dicom']['object']['measurements']
+                classification = config['inputs']['dcm2niix_input']['object']['measurements']
             except:
                 log.info('  Cannot determine classification from config.json.')
         else:
