@@ -138,12 +138,13 @@ fi
 # If the dirname of the input file is INPUT_DIR and thus the input directory will
 # be used for the file name output in dcm2niix, then set the filename to
 # something better, as suggested by CR.
-if [[ $(dirname "$dicom_input") == "${INPUT_DIR}" ]] ||
-   [[ "$dicom_input" == "${INPUT_DIR}" ]] &&
-   [[ ${config_filename} == "%f" ]];
+if ([[ $(dirname "$dicom_input") == "${INPUT_DIR}" ]] && [[ -f "$dicom_input" ]]) ||
+   [[ "$dicom_input" == "${INPUT_DIR}" ]];
 then
-  config_filename="%p_%s"
-  echo -e "${CONTAINER}  Setting filename format to %p_%s."
+   if [[ ${config_filename} == "%f" ]]; then
+     config_filename="%p_%s"
+     echo -e "${CONTAINER}  Setting filename format to %p_%s."
+   fi
 fi
 
 ##############################################################################
@@ -171,22 +172,24 @@ dcm2niix_exit_code=$?
 # We will inject the information from the BIDS sidecar json file into the file
 # info map for each output file. First we check if the sidecar should be preserved,
 # based on the flag, then we execute the python code to generate it.
-TEMP_METADATA=/tmp/bids_metdata.json
+TEMP_METADATA=/metadata/
+mkdir ${TEMP_METADATA}
 
 if [[ ${dcm2niix_exit_code} == 0 ]]; then
-  bids_sidecar_file=$(find $OUTPUT_DIR -type f -name "*.json")
+  bids_sidecar_files=$(find $OUTPUT_DIR -type f -name "*.json")
 
-  if [[ -f "${bids_sidecar_file}" ]]; then
+  if [[ -n "${bids_sidecar_files}" ]]; then
     echo "${CONTAINER}  Generating metadata from BIDS Sidecar"
-    cat "${bids_sidecar_file}" > "${TEMP_METADATA}"
+    find $OUTPUT_DIR -type f -name "*.json" -exec cp {} $TEMP_METADATA \;
 
-    # If the user did not want the sidecar, then we remove it
+    # If the user did not want the sidecar, then remove it
     if [[ ${config_bids_sidecar} == "n" ]] && [[ ${config_anonymize_bids} == "n" ]]; then
-      rm "${bids_sidecar_file}"
+      find $OUTPUT_DIR -type f -name "*.json" -exec rm {} \;
     fi
 
-    # Generate metadata
-    /flywheel/v0/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
+
+      # Generate metadata
+      /flywheel/v0/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
 
   else
     echo "${CONTAINER}  No BIDS Sidecar could be found. Metadata will not be generated."

@@ -17,7 +17,7 @@ log = logging.getLogger('metadata')
 
 
 # Generate metadata
-def metadata_gen(outbase, bids_sidecar, config_file):
+def metadata_gen(outbase, bids_sidecar_dir, config_file):
     """Generate file metadata.
 
     Builds file.info from BIDS sidecar json file, as output from dcm2niix.
@@ -25,9 +25,9 @@ def metadata_gen(outbase, bids_sidecar, config_file):
     config.json file, as provided by Flywheel, and file.type from the ext.
 
     Args:
-        outbase: Directory with output files.
-        bids_sidecar: Path to BIDS sidecar json file.
-        config_file: Path to config.json file.
+        outbase:          Directory with output files.
+        bids_sidecar_dir: Root path to BIDS sidecar json files.
+        config_file:      Path to config.json file.
 
     Returns:
         metadata_file: Path to .metadata.json file.
@@ -36,10 +36,6 @@ def metadata_gen(outbase, bids_sidecar, config_file):
     output_files = os.listdir(outbase)
     files = []
     if len(output_files) > 0:
-
-        # Get the BIDS info from the sidecar
-        with open(bids_sidecar) as bids_f:
-            bids_info = json.load(bids_f)
 
         # Read the config
         (config, classification) = ([], [])
@@ -55,22 +51,35 @@ def metadata_gen(outbase, bids_sidecar, config_file):
             log.info('  No config file was found. Classification will not be set.')
 
         for f in output_files:
+
             # Determine the file's type
             if f.endswith('.nii.gz') or f.endswith('.nii'):
                 ftype = 'nifti'
+                bids_sidecar = os.path.join(bids_sidecar_dir, f.replace('.nii.gz','.nii').replace('.nii','.json'))
             elif f.endswith('bvec'):
                 ftype = 'bvec'
+                bids_sidecar = os.path.join(bids_sidecar_dir, f.replace('.bvec','.json'))
             elif f.endswith('bval'):
                 ftype = 'bval'
+                bids_sidecar = os.path.join(bids_sidecar_dir, f.replace('.bval','.json'))
             else:
                 ftype = 'None'
+                bids_sidecar = []
 
-            # Build the file map and append to files list
+            # Build the file map
             fdict = {}
             fdict['name'] = f
             fdict['type'] = ftype
-            fdict['info'] = bids_info
             fdict['measurements'] = classification
+
+            # Get the BIDS info from the sidecar associated with this file
+            if bids_sidecar:
+                with open(bids_sidecar) as bids_f:
+                    bids_info = json.load(bids_f)
+                # Add bids_info to info key
+                fdict['info'] = bids_info
+
+            # Append this file dict to the list
             files.append(fdict)
 
         # Collate the metadata and write to file
@@ -92,7 +101,7 @@ if __name__ == '__main__':
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument('outdir', nargs='?', help='outfile directory')
-    ap.add_argument('bids_sidecar', nargs='?', help='path to BIDS sidecar')
+    ap.add_argument('bids_sidecar', nargs='?', help='root path to BIDS sidecar files')
     ap.add_argument('config_file', help='Read classification from config_file')
     ap.add_argument('--log_level', help='logging level', default='info')
     args = ap.parse_args()
