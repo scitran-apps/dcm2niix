@@ -75,7 +75,8 @@ def metadata_gen(outbase, bids_sidecar, config_file):
 
         # Collate the metadata and write to file
         metadata = {}
-        metadata['files'] = files
+        metadata['acquisition'] = {}
+        metadata['acquisition']['files'] = files
         metadata_file = os.path.join(outbase, '.metadata.json')
         with open(metadata_file, 'w') as metafile:
             json.dump(metadata, metafile)
