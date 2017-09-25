@@ -26,7 +26,8 @@ RUN apt-get update -qq \
     pigz \
     gzip \
     wget \
-    jq
+    jq \
+    python
 
 # Compile DCM2NIIX from source
 ENV DCMCOMMIT=d54cf684605fb0743712dea1b54564efc260ea3a
@@ -41,7 +42,8 @@ ENV FLYWHEEL /flywheel/v0
 WORKDIR ${FLYWHEEL}
 
 # Add executables
-COPY run ${FLYWHEEL}/run
+COPY run metadata.py ./
+RUN chmod +x run metadata.py
 
 # Add manifest
 COPY manifest.json ${FLYWHEEL}/manifest.json
