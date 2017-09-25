@@ -26,7 +26,8 @@ RUN apt-get update -qq \
     pigz \
     gzip \
     wget \
-    jq
+    jq \
+    python
 
 # Compile DCM2NIIX from source
 ENV DCMCOMMIT=d54cf684605fb0743712dea1b54564efc260ea3a
@@ -35,9 +36,6 @@ WORKDIR /usr/local/dcm2niix-${DCMCOMMIT}/build
 RUN cmake -DUSE_OPENJPEG=ON ../ && \
     make && \
     make install
-
-# Install python for metadata generation
-RUN apt-get install -y python
 
 # Make directory for flywheel spec (v0)
 ENV FLYWHEEL /flywheel/v0
