@@ -135,6 +135,17 @@ if [[ -d "$dicom_input" ]]; then
   fi
 fi
 
+# If the dirname of the input file is INPUT_DIR and thus the input directory will
+# be used for the file name output in dcm2niix, then set the filename to
+# something better, as suggested by CR.
+if [[ $(dirname "$dicom_input") == "${INPUT_DIR}" ]] ||
+   [[ "$dicom_input" == "${INPUT_DIR}" ]] &&
+   [[ ${config_filename} == "%f" ]];
+then
+  config_filename="%p_%s"
+  echo -e "${CONTAINER}  Setting filename format to %p_%s."
+fi
+
 ##############################################################################
 # Run the dcm2niix algorithm passing forth the ENV vars with config
 
