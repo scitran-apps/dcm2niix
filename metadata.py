@@ -62,6 +62,9 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
             elif f.endswith('bval'):
                 ftype = 'bval'
                 bids_sidecar = os.path.join(bids_sidecar_dir, f.replace('.bval','.json'))
+            elif f.endswith('json'):
+                ftype = 'source code'
+                bids_sidecar = []
             else:
                 ftype = 'None'
                 bids_sidecar = []
