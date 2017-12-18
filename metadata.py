@@ -42,7 +42,7 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
         if config_file.endswith('config.json'):
             classification = []
             with open(config_file) as config_f:
-                config = json.load(config_f)
+                config = json.load(config_f, strict=False)
             try:
                 classification = config['inputs']['dcm2niix_input']['object']['measurements']
             except:
@@ -62,6 +62,9 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
             elif f.endswith('bval'):
                 ftype = 'bval'
                 bids_sidecar = os.path.join(bids_sidecar_dir, f.replace('.bval','.json'))
+            elif f.endswith('json'):
+                ftype = 'source code'
+                bids_sidecar = os.path.join(bids_sidecar_dir, f)
             else:
                 ftype = 'None'
                 bids_sidecar = []
@@ -75,7 +78,7 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
             # Get the BIDS info from the sidecar associated with this file
             if bids_sidecar:
                 with open(bids_sidecar) as bids_f:
-                    bids_info = json.load(bids_f)
+                    bids_info = json.load(bids_f, strict=False)
                 # Add bids_info to info key
                 fdict['info'] = bids_info
 
