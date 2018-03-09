@@ -148,21 +148,49 @@ then
 fi
 
 ##############################################################################
+
+if [[ ${config_convert_only_series} != "all" ]]; then
+  list=''
+  for i in ${config_convert_only_series}; do
+    list=${list:+$list}" -d "$i
+  done
+  config_convert_only_series="${list}"
+  echo "[$CONTAINER] Series to convert: $config_convert_only_series"
+fi
+
+##############################################################################
 # Run the dcm2niix algorithm passing forth the ENV vars with config
 
-dcm2niix -ba ${config_anonymize_bids} \
-         -b  y \
-         -m  ${config_merge2d} \
-         -t  ${config_text_notes_private} \
-         -x  ${config_crop} \
-         -z  ${config_compress_nifti} \
-         -f  ${config_filename} \
-         -i  ${config_ignore_derived} \
-         -p  ${config_philips_scaling} \
-         -s  ${config_single_file_mode} \
-         -o  ${OUTPUT_DIR} \
-         "$dicom_input"
+if [[ ${config_bids_sidecar} == "o" ]]; then
+  dcm2niix -ba ${config_anonymize_bids} \
+           -b  o \
+           -m  ${config_merge2d} \
+           -t  ${config_text_notes_private} \
+           -x  ${config_crop} \
+           -z  ${config_compress_nifti} \
+           -f  ${config_filename} \
+           -i  ${config_ignore_derived} \
+           -p  ${config_philips_scaling} \
+           -s  ${config_single_file_mode} \
+           -o  ${OUTPUT_DIR} \
+           "$dicom_input"
 
+else
+  dcm2niix -ba ${config_anonymize_bids} \
+           -b  y \
+           -m  ${config_merge2d} \
+           -t  ${config_text_notes_private} \
+           -x  ${config_crop} \
+           -z  ${config_compress_nifti} \
+           -f  ${config_filename} \
+           -i  ${config_ignore_derived} \
+           -p  ${config_philips_scaling} \
+           -s  ${config_single_file_mode} \
+           -d  ${config_sort_diffusion_volumes} \
+               ${config_convert_only_series} \
+           -o  ${OUTPUT_DIR} \
+           "$dicom_input"
+fi
 dcm2niix_exit_code=$?
 
 
