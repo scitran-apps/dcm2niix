@@ -48,7 +48,7 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
             except:
                 log.info('  Cannot determine classification from config.json.')
         else:
-            log.info('  No config file was found. Classification will not be set.')
+            log.info('  No config file was found. Classification will not be set for outputs!')
 
         for f in output_files:
 
