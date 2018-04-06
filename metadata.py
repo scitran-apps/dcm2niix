@@ -40,13 +40,18 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
         # Read the config
         (config, classification) = ([], [])
         if config_file.endswith('config.json'):
+            modality = None
             classification = []
             with open(config_file) as config_f:
                 config = json.load(config_f, strict=False)
             try:
-                classification = config['inputs']['dcm2niix_input']['object']['measurements']
+                classification = config['inputs']['dcm2niix_input']['object']['classification']
             except:
                 log.info('  Cannot determine classification from config.json.')
+            try:
+                modality = config['inputs']['dcm2niix_input']['object']['modality']
+            except:
+                log.info('  Cannot determine modality from config.json.')
         else:
             log.info('  No config file was found. Classification will not be set for outputs!')
 
@@ -73,14 +78,23 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
             fdict = {}
             fdict['name'] = f
             fdict['type'] = ftype
-            fdict['measurements'] = classification
+            fdict['classification'] = classification
 
             # Get the BIDS info from the sidecar associated with this file
             if bids_sidecar:
                 with open(bids_sidecar) as bids_f:
                     bids_info = json.load(bids_f, strict=False)
+                    if not modality and 'Modality' in bids_info:
+                        modality = bids_info['Modality']
+
                 # Add bids_info to info key
                 fdict['info'] = bids_info
+
+            # Set modality (config.json > bids_info > 'MR')
+            if modality:
+                fdict['modality'] = modality
+            else:
+                fdict['modality'] = 'MR'
 
             # Append this file dict to the list
             files.append(fdict)
