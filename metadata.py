@@ -38,10 +38,8 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
     if len(output_files) > 0:
 
         # Read the config
-        (config, classification) = ([], [])
+        (config, modality, classification) = ([], None, [])
         if config_file.endswith('config.json'):
-            modality = None
-            classification = []
             with open(config_file) as config_f:
                 config = json.load(config_f, strict=False)
             try:

@@ -69,7 +69,7 @@ fi
 if [[ "$input_file" == *.zip ]] ; then
 
   echo "$CONTAINER  Unzipping $input_file"
-  unzip -q "$input_file" -d $INPUT_DIR
+  unzip -q -B "$input_file" -d $INPUT_DIR
 
   # Find unzipped directory in input dir
   dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -type d | head -1)
