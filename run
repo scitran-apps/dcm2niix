@@ -220,10 +220,10 @@ if [[ ${dcm2niix_exit_code} == 0 ]]; then
       /flywheel/v0/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
 
   else
-    echo "${CONTAINER}  No BIDS Sidecar could be found. Metadata will not be generated."
+    echo -e "\n${CONTAINER}  No BIDS Sidecar could be found. Metadata will not be generated."
   fi
 else
-  echo "${CONTAINER}  DCM2NIIX did not return zero. Metadata will not be generated."
+  echo -e "\n${CONTAINER}  DCM2NIIX did not return zero. Metadata will not be generated."
 fi
 
 
@@ -238,6 +238,7 @@ elif [[ $dcm2niix_exit_code == 2 ]]; then
   echo -e "$CONTAINER  No valid DICOM files found (dcm2niix exit status = $dcm2niix_exit_code). Conversion was not attempted. Exiting(0)."
   exit 0
 else
-  echo -e "$CONTAINER  Error converting DICOMs! Exit status = $dcm2niix_exit_code"
+  echo -e "$CONTAINER  Error converting DICOMs! Exit status = $dcm2niix_exit_code. Removing outputs and exiting."
+  rm -rf ${OUTPUT_DIR}/*
   exit $dcm2niix_exit_code
 fi

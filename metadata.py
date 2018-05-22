@@ -9,6 +9,7 @@
 #
 
 import os
+import re
 import json
 import logging
 import datetime
@@ -58,7 +59,7 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
             # Determine the file's type
             if f.endswith('.nii.gz') or f.endswith('.nii'):
                 ftype = 'nifti'
-                bids_sidecar = os.path.join(bids_sidecar_dir, f.replace('.nii.gz','.nii').replace('.nii','.json'))
+                bids_sidecar = os.path.join(bids_sidecar_dir, re.sub(r'(\.nii\.gz|\.nii|_[0-9]\.nii\.gz|_[0-9]\.nii)', '.json', f))
             elif f.endswith('bvec'):
                 ftype = 'bvec'
                 bids_sidecar = os.path.join(bids_sidecar_dir, f.replace('.bvec','.json'))
@@ -79,7 +80,7 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
             fdict['classification'] = classification
 
             # Get the BIDS info from the sidecar associated with this file
-            if bids_sidecar:
+            if bids_sidecar and os.path.isfile(bids_sidecar):
                 with open(bids_sidecar) as bids_f:
                     bids_info = json.load(bids_f, strict=False)
                     if not modality and 'Modality' in bids_info:
