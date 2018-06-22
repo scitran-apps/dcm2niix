@@ -8,9 +8,9 @@
   "source": "https://github.com/scitran-apps/dcm2niix",
   "license": "BSD-2-Clause",
   "flywheel": "0",
-  "version": "0.5.2_1.0.20180328",
+  "version": "0.6.0_1.0.20180328",
   "custom": {
-    "docker-image": "scitran/dcm2niix:0.5.2_1.0.20180328"
+    "docker-image": "scitran/dcm2niix:0.6.0_1.0.20180328"
   },
   "config": {
     "decompress_dicoms": {
@@ -78,7 +78,7 @@
       "default": "n",
       "id": "-s"
     },
-    "3Dvol": {
+    "vol3D": {
       "description": "Output 3D uncompressed volumes (true/false, default=false). Note that the filename flag will be set to '-f %p_%s' to prevent overwriting files",
       "type": "boolean",
       "default": false
@@ -92,7 +92,7 @@
     "convert_only_series": {
       "description": "only convert this series number - can be used up to 16 times (default convert all). Provide series numbers in a space-separated list within single quotes, e.g., '12 13'",
       "type": "string",
-      "default": "'all'",
+      "default": "all",
       "id": "-n"
     }
   },

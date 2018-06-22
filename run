@@ -12,6 +12,11 @@ FLYWHEEL_BASE=/flywheel/v0
 OUTPUT_DIR=$FLYWHEEL_BASE/output
 INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix_input
 CONFIG_FILE=$FLYWHEEL_BASE/config.json
+MANIFEST_FILE=$FLYWHEEL_BASE/manifest.json
+
+if [[ ! -f $CONFIG_FILE ]]; then
+  CONFIG_FILE=$MANIFEST_FILE
+fi
 
 ##############################################################################
 # Parse configuration
@@ -21,34 +26,58 @@ CONFIG_FILE=$FLYWHEEL_BASE/config.json
 # ENV vars being cast from the manifest.json or config.json file. Those variables
 # can be found in the manifest.json file within the `config` map. They are
 # listed here (with 'config' prefixed) for clarity:
-#   ${config_bids_sidecar}
-#   ${config_merge2d}
-#   ${config_text_notes_private}
-#   ${config_crop}
-#   ${config_compress_nifti}
-#   ${config_filename}
+#   ${bids_sidecar}
+#   ${merge2d}
+#   ${text_notes_private}
+#   ${crop}
+#   ${compress_nifti}
+#   ${filename}
 #
 # If config.json exists, then we parse config file and cast vals to ENV Vars
 # (Flywheel gear run). Otherwise we parse manifest.json and cast the values to
 # ENV Vars from manifest (note value.default is used to grab the configured
 # defaults)
 
-if [[ -f $CONFIG_FILE ]]; then
-  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value)"' $CONFIG_FILE)
-else
-  CONFIG_FILE=$FLYWHEEL_BASE/manifest.json
-  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value.default)"' $CONFIG_FILE)
-fi
+function parse_config {
 
+  CONFIG_FILE=$FLYWHEEL_BASE/config.json
+  MANIFEST_FILE=$FLYWHEEL_BASE/manifest.json
+
+  if [[ -f $CONFIG_FILE ]]; then
+    echo -e "$(cat $CONFIG_FILE | jq -r '.config.'$1)"
+  else
+    CONFIG_FILE=$MANIFEST_FILE
+    echo -e "$(cat $MANIFEST_FILE | jq -r '.config.'$1'.default')"
+  fi
+}
+
+decompress_dicoms="$(parse_config 'decompress_dicoms')"
+bids_sidecar="$(parse_config 'bids_sidecar')"
+merge2d="$(parse_config 'merge2d')"
+text_notes_private="$(parse_config 'text_notes_private')"
+crop="$(parse_config 'crop')"
+compress_nifti="$(parse_config 'compress_nifti')"
+filename="$(parse_config 'filename')"
+anonymize_bids="$(parse_config 'anonymize_bids')"
+ignore_derived="$(parse_config 'ignore_derived')"
+philips_scaling="$(parse_config 'philips_scaling')"
+single_file_mode="$(parse_config 'single_file_mode')"
+vol3D="$(parse_config 'vol3D')"
+sort_diffusion_volumes="$(parse_config 'sort_diffusion_volumes')"
+convert_only_series="$(parse_config 'convert_only_series')"
+
+
+##############################################################################
 # Check for 3Dvol option in config
-if [[ ${config_3Dvol} == "true" ]]; then
-  config_compress_nifti=3;
+
+if [[ ${vol3D} == "true" ]]; then
+  compress_nifti=3;
 fi
 
 # Set filename config if 3D volumes will be output
-if [[ ${config_compress_nifti} == 3 ]]; then
+if [[ ${compress_nifti} == 3 ]]; then
   echo "$CONTAINER  Outputs will be saved as uncompressed 3D volumes -- re-setting filename flag (-f %p_%s) to prevent overwriting."
-  config_filename=%p_%s
+  filename=%p_%s
 fi
 
 ##############################################################################
@@ -104,7 +133,7 @@ fi
 # https://www.nitrc.org/plugins/mwiki/index.php/dcm2nii:MainPage#Transfer_Syntaxes_and_Compressed_Images
 
 # Check config for decompress option
-if [[ $config_decompress_dicoms == 'true' ]]; then
+if [[ $decompress_dicoms == 'true' ]]; then
 
   # Get a list of the dicoms to be decompressed
   dicom_files=$(find "$dicom_input" -type f)
@@ -141,53 +170,54 @@ fi
 if ([[ $(dirname "$dicom_input") == "${INPUT_DIR}" ]] && [[ -f "$dicom_input" ]]) ||
    [[ "$dicom_input" == "${INPUT_DIR}" ]];
 then
-   if [[ ${config_filename} == "%f" ]]; then
-     config_filename="%p_%s"
+   if [[ ${filename} == "%f" ]]; then
+     filename="%p_%s"
      echo -e "${CONTAINER}  Setting filename format to %p_%s."
    fi
 fi
 
 ##############################################################################
+# Handle convert series
 
-if [[ ${config_convert_only_series} != "all" ]]; then
+if [[ ${convert_only_series} != "all" ]]; then
   list=''
-  for i in ${config_convert_only_series}; do
+  for i in ${convert_only_series}; do
     list=${list:+$list}" -d "$i
   done
-  config_convert_only_series="${list}"
-  echo "[$CONTAINER] Series to convert: $config_convert_only_series"
+  convert_only_series="${list}"
+  echo "[$CONTAINER] Series to convert: $convert_only_series"
 fi
 
 ##############################################################################
 # Run the dcm2niix algorithm passing forth the ENV vars with config
 
-if [[ ${config_bids_sidecar} == "o" ]]; then
-  dcm2niix -ba ${config_anonymize_bids} \
+if [[ ${bids_sidecar} == "o" ]]; then
+  dcm2niix -ba ${anonymize_bids} \
            -b  o \
-           -m  ${config_merge2d} \
-           -t  ${config_text_notes_private} \
-           -x  ${config_crop} \
-           -z  ${config_compress_nifti} \
-           -f  ${config_filename} \
-           -i  ${config_ignore_derived} \
-           -p  ${config_philips_scaling} \
-           -s  ${config_single_file_mode} \
+           -m  ${merge2d} \
+           -t  ${text_notes_private} \
+           -x  ${crop} \
+           -z  ${compress_nifti} \
+           -f  ${filename} \
+           -i  ${ignore_derived} \
+           -p  ${philips_scaling} \
+           -s  ${single_file_mode} \
            -o  ${OUTPUT_DIR} \
            "$dicom_input"
 
 else
-  dcm2niix -ba ${config_anonymize_bids} \
+  dcm2niix -ba ${anonymize_bids} \
            -b  y \
-           -m  ${config_merge2d} \
-           -t  ${config_text_notes_private} \
-           -x  ${config_crop} \
-           -z  ${config_compress_nifti} \
-           -f  ${config_filename} \
-           -i  ${config_ignore_derived} \
-           -p  ${config_philips_scaling} \
-           -s  ${config_single_file_mode} \
-           -d  ${config_sort_diffusion_volumes} \
-               ${config_convert_only_series} \
+           -m  ${merge2d} \
+           -t  ${text_notes_private} \
+           -x  ${crop} \
+           -z  ${compress_nifti} \
+           -f  ${filename} \
+           -i  ${ignore_derived} \
+           -p  ${philips_scaling} \
+           -s  ${single_file_mode} \
+           -d  ${sort_diffusion_volumes} \
+               ${convert_only_series} \
            -o  ${OUTPUT_DIR} \
            "$dicom_input"
 fi
@@ -211,7 +241,7 @@ if [[ ${dcm2niix_exit_code} == 0 ]]; then
     find $OUTPUT_DIR -type f -name "*.json" -exec cp {} $TEMP_METADATA \;
 
     # If the user did not want the sidecar, then remove it
-    if [[ ${config_bids_sidecar} == "n" ]] && [[ ${config_anonymize_bids} == "n" ]]; then
+    if [[ ${bids_sidecar} == "n" ]] && [[ ${anonymize_bids} == "n" ]]; then
       find $OUTPUT_DIR -type f -name "*.json" -exec rm {} \;
     fi
 
