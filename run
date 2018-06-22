@@ -22,23 +22,13 @@ fi
 # Parse configuration
 
 # If the config file does not exist (i.e., local run) then parse the config
-# options and values from the manifest. This process will result in a number of
-# ENV vars being cast from the manifest.json or config.json file. Those variables
-# can be found in the manifest.json file within the `config` map. They are
-# listed here (with 'config' prefixed) for clarity:
-#   ${bids_sidecar}
-#   ${merge2d}
-#   ${text_notes_private}
-#   ${crop}
-#   ${compress_nifti}
-#   ${filename}
-#
-# If config.json exists, then we parse config file and cast vals to ENV Vars
-# (Flywheel gear run). Otherwise we parse manifest.json and cast the values to
-# ENV Vars from manifest (note value.default is used to grab the configured
-# defaults)
+# options and values from the manifest. Those variables can be found in the
+# manifest.json file within the `config` map.
+
 
 function parse_config {
+  # If config.json exists, then we parse config file  Otherwise we parse
+  # manifest.json.
 
   CONFIG_FILE=$FLYWHEEL_BASE/config.json
   MANIFEST_FILE=$FLYWHEEL_BASE/manifest.json
