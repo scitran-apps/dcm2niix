@@ -184,30 +184,30 @@ fi
 if [[ ${bids_sidecar} == "o" ]]; then
   dcm2niix -ba ${anonymize_bids} \
            -b  o \
-           -m  ${merge2d} \
-           -t  ${text_notes_private} \
-           -x  ${crop} \
-           -z  ${compress_nifti} \
-           -f  ${filename} \
-           -i  ${ignore_derived} \
-           -p  ${philips_scaling} \
-           -s  ${single_file_mode} \
+           -m  "${merge2d}" \
+           -t  "${text_notes_private}" \
+           -x  "${crop}" \
+           -z  "${compress_nifti}" \
+           -f  "${filename}" \
+           -i  "${ignore_derived}" \
+           -p  "${philips_scaling}" \
+           -s  "${single_file_mode}" \
            -o  ${OUTPUT_DIR} \
            "$dicom_input"
 
 else
-  dcm2niix -ba ${anonymize_bids} \
+  dcm2niix -ba "${anonymize_bids}" \
            -b  y \
-           -m  ${merge2d} \
-           -t  ${text_notes_private} \
-           -x  ${crop} \
-           -z  ${compress_nifti} \
-           -f  ${filename} \
-           -i  ${ignore_derived} \
-           -p  ${philips_scaling} \
-           -s  ${single_file_mode} \
-           -d  ${sort_diffusion_volumes} \
-               ${convert_only_series} \
+           -m  "${merge2d}" \
+           -t  "${text_notes_private}" \
+           -x  "${crop}" \
+           -z  "${compress_nifti}" \
+           -f  "${filename}" \
+           -i  "${ignore_derived}" \
+           -p  "${philips_scaling}" \
+           -s  "${single_file_mode}" \
+           -d  "${sort_diffusion_volumes}" \
+               "${convert_only_series}" \
            -o  ${OUTPUT_DIR} \
            "$dicom_input"
 fi
