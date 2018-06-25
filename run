@@ -172,7 +172,7 @@ fi
 if [[ ${convert_only_series} != "all" ]]; then
   list=''
   for i in ${convert_only_series}; do
-    list=${list:+$list}" -d "$i
+    list=${list:+$list}" -n "$i
   done
   convert_only_series="${list}"
   echo "[$CONTAINER] Series to convert: $convert_only_series"
