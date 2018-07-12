@@ -53,8 +53,8 @@ ignore_derived="$(parse_config 'ignore_derived')"
 philips_scaling="$(parse_config 'philips_scaling')"
 single_file_mode="$(parse_config 'single_file_mode')"
 vol3D="$(parse_config 'vol3D')"
-sort_diffusion_volumes="$(parse_config 'sort_diffusion_volumes')"
 convert_only_series="$(parse_config 'convert_only_series')"
+lossless_scaling="$(parse_config 'lossless_scaling')"
 
 
 ##############################################################################
@@ -184,14 +184,7 @@ fi
 if [[ ${bids_sidecar} == "o" ]]; then
   dcm2niix -ba ${anonymize_bids} \
            -b  o \
-           -m  "${merge2d}" \
-           -t  "${text_notes_private}" \
-           -x  "${crop}" \
-           -z  "${compress_nifti}" \
            -f  "${filename}" \
-           -i  "${ignore_derived}" \
-           -p  "${philips_scaling}" \
-           -s  "${single_file_mode}" \
            -o  ${OUTPUT_DIR} \
            "$dicom_input"
 
@@ -206,8 +199,8 @@ else
            -i  "${ignore_derived}" \
            -p  "${philips_scaling}" \
            -s  "${single_file_mode}" \
-           -d  "${sort_diffusion_volumes}" \
-               "${convert_only_series}" \
+           "${convert_only_series}" \
+           -l  "${lossless_scaling}" \
            -o  ${OUTPUT_DIR} \
            "$dicom_input"
 fi
@@ -237,7 +230,7 @@ if [[ ${dcm2niix_exit_code} == 0 ]]; then
 
 
       # Generate metadata
-      /flywheel/v0/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
+      ${FLYWHEEL_BASE}/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
 
   else
     echo -e "\n${CONTAINER}  No BIDS Sidecar could be found. Metadata will not be generated."
@@ -255,8 +248,8 @@ if [[ $dcm2niix_exit_code == 0 ]]; then
   echo -e "$CONTAINER  Success!"
   exit 0
 elif [[ $dcm2niix_exit_code == 2 ]]; then
-  echo -e "$CONTAINER  No valid DICOM files found (dcm2niix exit status = $dcm2niix_exit_code). Conversion was not attempted. Exiting(0)."
-  exit 0
+  echo -e "$CONTAINER  No valid DICOM files found (dcm2niix exit status = $dcm2niix_exit_code). Conversion was not attempted. Exiting(17)."
+  exit 17
 else
   echo -e "$CONTAINER  Error converting DICOMs! Exit status = $dcm2niix_exit_code. Removing outputs and exiting."
   rm -rf ${OUTPUT_DIR}/*
