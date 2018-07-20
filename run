@@ -55,6 +55,7 @@ single_file_mode="$(parse_config 'single_file_mode')"
 vol3D="$(parse_config 'vol3D')"
 convert_only_series="$(parse_config 'convert_only_series')"
 lossless_scaling="$(parse_config 'lossless_scaling')"
+ignore_errors="$(parse_config 'ignore_errors')"
 
 
 ##############################################################################
@@ -216,7 +217,7 @@ dcm2niix_exit_code=$?
 TEMP_METADATA=/metadata/
 mkdir ${TEMP_METADATA}
 
-if [[ ${dcm2niix_exit_code} == 0 ]]; then
+if [[ ${dcm2niix_exit_code} == 0 ]] || [[ ${ignore_errors} == "true" ]] ; then
   bids_sidecar_files=$(find $OUTPUT_DIR -type f -name "*.json")
 
   if [[ -n "${bids_sidecar_files}" ]]; then
@@ -228,9 +229,8 @@ if [[ ${dcm2niix_exit_code} == 0 ]]; then
       find $OUTPUT_DIR -type f -name "*.json" -exec rm {} \;
     fi
 
-
-      # Generate metadata
-      ${FLYWHEEL_BASE}/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
+    # Generate metadata
+    ${FLYWHEEL_BASE}/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
 
   else
     echo -e "\n${CONTAINER}  No BIDS Sidecar could be found. Metadata will not be generated."
@@ -251,7 +251,13 @@ elif [[ $dcm2niix_exit_code == 2 ]]; then
   echo -e "$CONTAINER  No valid DICOM files found (dcm2niix exit status = $dcm2niix_exit_code). Conversion was not attempted. Exiting(17)."
   exit 17
 else
-  echo -e "$CONTAINER  Error converting DICOMs! Exit status = $dcm2niix_exit_code. Removing outputs and exiting."
-  rm -rf ${OUTPUT_DIR}/*
+  echo -e "$CONTAINER  Error converting DICOMs! Exit status = $dcm2niix_exit_code."
+  if [[ $ignore_errors == "false" ]]; then
+    echo -e "$CONTAINER  Removing outputs and exiting (1)!"
+    rm -rf ${OUTPUT_DIR}/*
+  else
+    echo -e "$CONTAINER  WARNING: Ignoring errors (ignore_errors=0) and preserving outputs! Check DATA!"
+    chmod -R 777 $OUTPUT_DIR
+  fi
   exit $dcm2niix_exit_code
 fi
