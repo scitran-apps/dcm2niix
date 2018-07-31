@@ -42,8 +42,11 @@ ENV FLYWHEEL /flywheel/v0
 WORKDIR ${FLYWHEEL}
 
 # Add executables
-COPY run metadata.py ./
+COPY run run_dcm2niix metadata.py ./
 RUN chmod +x run metadata.py
+
+# Create Flywheel User
+RUN adduser --disabled-password --gecos "Flywheel User" flywheel
 
 # Add manifest
 COPY manifest.json ${FLYWHEEL}/manifest.json
