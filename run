@@ -1,0 +1,20 @@
+#! /bin/bash
+#
+#
+CONTAINER='[scitran/dcm2niix]'
+echo -e "$CONTAINER  running..."
+
+# Set paths
+FLYWHEEL_BASE=/flywheel/v0
+OUTPUT_DIR=$FLYWHEEL_BASE/output
+
+# Change permissions on output directory
+chown -R flywheel $OUTPUT_DIR
+
+# Execute dcm2niix run script as Flywheel user
+sudo -u flywheel $FLYWHEEL_BASE/run_dcm2niix
+exit_status=$?
+
+# Exit using dcm2niix exit status
+echo -e "$CONTAINER  Exiting with exit=$exit_status"
+exit $exit_status

@@ -3,7 +3,8 @@
 #
 
 CONTAINER='[scitran/dcm2niix]'
-echo -e "$CONTAINER  running..."
+echo -e "$CONTAINER  user=$(whoami)"
+
 
 ##############################################################################
 # Configure paths
@@ -214,7 +215,7 @@ dcm2niix_exit_code=$?
 # We will inject the information from the BIDS sidecar json file into the file
 # info map for each output file. First we check if the sidecar should be preserved,
 # based on the flag, then we execute the python code to generate it.
-TEMP_METADATA=/metadata/
+TEMP_METADATA=/tmp/metadata/
 mkdir ${TEMP_METADATA}
 
 if [[ ${dcm2niix_exit_code} == 0 ]] || [[ ${ignore_errors} == "true" ]] ; then
@@ -239,7 +240,6 @@ else
   echo -e "\n${CONTAINER}  DCM2NIIX did not return zero. Metadata will not be generated."
 fi
 
-
 ##############################################################################
 # Check exit status/outputs/permissions and exit
 
@@ -251,9 +251,9 @@ elif [[ $dcm2niix_exit_code == 2 ]]; then
   echo -e "$CONTAINER  No valid DICOM files found (dcm2niix exit status = $dcm2niix_exit_code). Conversion was not attempted. Exiting(17)."
   exit 17
 else
-  echo -e "$CONTAINER  Error converting DICOMs! Exit status = $dcm2niix_exit_code."
+  echo -e "$CONTAINER  Error converting DICOMs! dcm2niix exit status = $dcm2niix_exit_code."
   if [[ $ignore_errors == "false" ]]; then
-    echo -e "$CONTAINER  Removing outputs and exiting (1)!"
+    echo -e "$CONTAINER  Removing outputs!"
     rm -rf ${OUTPUT_DIR}/*
   else
     echo -e "$CONTAINER  WARNING: Ignoring errors (ignore_errors=0) and preserving outputs! Check DATA!"
