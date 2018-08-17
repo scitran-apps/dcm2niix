@@ -10,7 +10,7 @@ echo -e "$CONTAINER  user=$(whoami)"
 # Configure paths
 
 FLYWHEEL_BASE=/flywheel/v0
-OUTPUT_DIR=$FLYWHEEL_BASE/output
+OUTPUT_DIR=output
 INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix_input
 CONFIG_FILE=$FLYWHEEL_BASE/config.json
 MANIFEST_FILE=$FLYWHEEL_BASE/manifest.json
