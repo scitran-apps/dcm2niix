@@ -10,12 +10,13 @@ echo -e "$CONTAINER  user=$(whoami)"
 # Configure paths
 
 FLYWHEEL_BASE=/flywheel/v0
-OUTPUT_DIR=output2
+DCM_OUTPUT_DIR=/flywheel/v0/output2
+OUTPUT_DIR=/flywheel/v0/output
 INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix_input
 CONFIG_FILE=$FLYWHEEL_BASE/config.json
 MANIFEST_FILE=$FLYWHEEL_BASE/manifest.json
 
-mkdir -p $OUTPUT_DIR
+mkdir -p $DCM_OUTPUT_DIR
 
 if [[ ! -f $CONFIG_FILE ]]; then
   CONFIG_FILE=$MANIFEST_FILE
@@ -189,7 +190,7 @@ if [[ ${bids_sidecar} == "o" ]]; then
   dcm2niix -ba ${anonymize_bids} \
            -b  o \
            -f  "${filename}" \
-           -o  ${OUTPUT_DIR} \
+           -o  ${DCM_OUTPUT_DIR} \
            "$dicom_input"
 
 else
@@ -205,12 +206,12 @@ else
            -s  "${single_file_mode}" \
            "${convert_only_series}" \
            -l  "${lossless_scaling}" \
-           -o  ${OUTPUT_DIR} \
+           -o  ${DCM_OUTPUT_DIR} \
            "$dicom_input"
 fi
 dcm2niix_exit_code=$?
 
-mv -v output2/* output
+mv -v $DCM_OUTPUT_DIR/* $OUTPUT_DIR/
 
 
 ##############################################################################
