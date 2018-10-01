@@ -211,7 +211,7 @@ else
 fi
 dcm2niix_exit_code=$?
 
-mv -v $DCM_OUTPUT_DIR/* $OUTPUT_DIR/
+mv $DCM_OUTPUT_DIR/* $OUTPUT_DIR/
 
 
 ##############################################################################
