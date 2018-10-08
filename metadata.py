@@ -13,6 +13,7 @@ import re
 import json
 import logging
 import datetime
+from pprint import pprint as pp
 logging.basicConfig()
 log = logging.getLogger('metadata')
 
@@ -59,7 +60,11 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
             # Determine the file's type
             if f.endswith('.nii.gz') or f.endswith('.nii'):
                 ftype = 'nifti'
-                bids_sidecar = os.path.join(bids_sidecar_dir, re.sub(r'(\.nii\.gz|\.nii|_[0-9]\.nii\.gz|_[0-9]\.nii)', '.json', f))
+                bids_sidecar = os.path.join(bids_sidecar_dir, re.sub(r'(\.nii\.gz|\.nii)', '.json', f))
+                log.info(bids_sidecar)
+                if not os.path.isfile(bids_sidecar):
+                    bids_sidecar = os.path.join(bids_sidecar_dir, re.sub(r'(\.nii\.gz|\.nii|_[0-9][0-9]\.nii\.gz|_[0-9][0-9]\.nii|_[0-9]\.nii\.gz|_[0-9]\.nii)', '.json', f))
+                    log.info(bids_sidecar)
             elif f.endswith('bvec'):
                 ftype = 'bvec'
                 bids_sidecar = os.path.join(bids_sidecar_dir, f.replace('.bvec','.json'))
@@ -102,6 +107,7 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
         metadata = {}
         metadata['acquisition'] = {}
         metadata['acquisition']['files'] = files
+        pp(metadata)
         metadata_file = os.path.join(outbase, '.metadata.json')
         with open(metadata_file, 'w') as metafile:
             json.dump(metadata, metafile)
