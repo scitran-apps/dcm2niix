@@ -95,15 +95,15 @@ if [[ "$input_file" == *.zip ]] ; then
   echo "$CONTAINER  Unzipping $input_file"
   unzip -q -B "$input_file" -d $INPUT_DIR
 
-  # Find unzipped directory in input dir
-  dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -type d | head -1)
+  # Find unzipped sub-directory within the input directory
+  dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -not -path '__MACOSX' -type d | head -1)
 
-  # If there is no unzipped directory, check for PAR/REC files
+  # If there is no unzipped sub-directory, check for PAR/REC files at the top-level
   if [[ -z "$dicom_input" ]]; then
       dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
   fi
 
-  # Zip bomb: Set dicom_input to INPUT_DIR
+  # Zip bomb: DICOMS are at the top level -- set dicom_input to INPUT_DIR
   if [[ -z "$dicom_input" ]]; then
     dicom_input=$INPUT_DIR
   fi
