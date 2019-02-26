@@ -101,6 +101,12 @@ if [[ "$input_file" == *.zip ]] ; then
   # If there is no unzipped sub-directory, check for PAR/REC files at the top-level
   if [[ -z "$dicom_input" ]]; then
       dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
+      if [[ -n "$dicom_input" ]]; then
+        # Rename par/rec pair using generic names
+        dicom_input=$INPUT_DIR/inputfile.par
+        find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" -exec mv {} $dicom_input \;
+        find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.rec" -o -name "*.REC" -exec mv {} $INPUT_DIR/inputfile.rec \;
+      fi
   fi
 
   # Zip bomb: DICOMS are at the top level -- set dicom_input to INPUT_DIR
@@ -118,6 +124,8 @@ else
   # Assume a directory containing dicoms was mounted in and pass it on (local docker execution)
   dicom_input=$INPUT_DIR
 fi
+
+echo -e "$CONTAINER $dicom_input"
 
 ##############################################################################
 # Decompression of DICOM files.
@@ -211,7 +219,9 @@ else
 fi
 dcm2niix_exit_code=$?
 
-mv $DCM_OUTPUT_DIR/* $OUTPUT_DIR/
+if [[ $dcm2niix_exit_code == 0 ]] || [[ $ignore_errors == "true" ]]; then
+  mv $DCM_OUTPUT_DIR/* $OUTPUT_DIR/
+fi
 
 
 ##############################################################################
