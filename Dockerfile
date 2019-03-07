@@ -27,7 +27,8 @@ RUN apt-get update -qq \
     gzip \
     wget \
     jq \
-    python
+    python \
+    python-nibabel
 
 # Compile DCM2NIIX from source
 ENV DCMCOMMIT=3d74eabceeaab57213e9ffef91c96de128ac5150
@@ -42,8 +43,8 @@ ENV FLYWHEEL /flywheel/v0
 WORKDIR ${FLYWHEEL}
 
 # Add executables
-COPY run run_dcm2niix metadata.py ./
-RUN chmod +x run metadata.py
+COPY run run_dcm2niix metadata.py coil_combine.py ./
+RUN chmod +x run metadata.py coil_combine.py
 
 # Create Flywheel User
 RUN adduser --disabled-password --gecos "Flywheel User" flywheel

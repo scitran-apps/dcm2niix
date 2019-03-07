@@ -60,6 +60,7 @@ vol3D="$(parse_config 'vol3D')"
 convert_only_series="$(parse_config 'convert_only_series')"
 lossless_scaling="$(parse_config 'lossless_scaling')"
 ignore_errors="$(parse_config 'ignore_errors')"
+coil_combine="$(parse_config 'coil_combine')"
 
 
 ##############################################################################
@@ -223,6 +224,21 @@ if [[ $dcm2niix_exit_code == 0 ]] || [[ $ignore_errors == "true" ]]; then
   mv $DCM_OUTPUT_DIR/* $OUTPUT_DIR/
 fi
 
+
+##############################################################################
+# Generate combined coil nifti file (optional)
+
+if [[ $dcm2niix_exit_code == 0 ]] && [[ $coil_combine == "true" ]]; then
+  echo "${CONTAINER}  Generating combined coil NIfTI..."
+  $FLYWHEEL_BASE/coil_combine.py $OUTPUT_DIR
+  combine_exit_code=$?
+
+  if [[ ${combine_exit_code} != 0 ]] && [[ $coil_combine == "false" ]]; then
+    echo "${CONTAINER}  Error generating combined coil data. Exiting(1)"
+    exit 1
+  fi
+
+fi
 
 ##############################################################################
 # Generate file metadata from BIDS Sidecar
