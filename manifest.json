@@ -18,7 +18,7 @@
     },
     "gear-builder": {
       "category": "converter",
-      "image": "scitran/dcm2niix:0.7.7_1.0.20181114"
+      "image": "scitran/dcm2niix:0.7.8_1.0.20181114"
     }
   },
   "config": {
