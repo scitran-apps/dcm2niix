@@ -13,7 +13,8 @@
     "docker-image": "scitran/dcm2niix:0.7.8_1.0.20181114",
     "flywheel": {
       "uid": 1000,
-      "gid": 1000
+      "gid": 1000,
+      "suite": "SciTran"
     },
     "gear-builder": {
       "category": "converter",
@@ -109,7 +110,7 @@
       "default": false
     },
     "coil_combine": {
-      "description": "For sequences with individual coil data saved as individual volumes, this option will save a NIfTI file with ONLY the combined coil data (i.e., the last volume). Default=False. Warning: We make no effor to check for independent coil data, we simply trust that if you have selcted this option, you know what you are asking for.",
+      "description": "For sequences with individual coil data, saved as individual volumes, this option will save a NIfTI file with ONLY the combined coil data (i.e., the last volume). Default=False. Warning: We make no effort to check for independent coil data, we simply trust that if you have selcted this option you know what you are asking for.",
       "type": "boolean",
       "default": false
     }
