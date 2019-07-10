@@ -31,7 +31,7 @@ RUN apt-get update -qq \
     python-nibabel
 
 # Compile DCM2NIIX from source
-ENV DCMCOMMIT=3d74eabceeaab57213e9ffef91c96de128ac5150
+ENV DCMCOMMIT=54cfd5176cb9f50c1c66d2f2e96beadf60e2edb4
 RUN curl -#L  https://github.com/rordenlab/dcm2niix/archive/$DCMCOMMIT.zip | bsdtar -xf- -C /usr/local
 WORKDIR /usr/local/dcm2niix-${DCMCOMMIT}/build
 RUN cmake -DUSE_OPENJPEG=ON -MY_DEBUG_GE=ON ../ && \
