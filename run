@@ -1,16 +1,292 @@
 #! /bin/bash
 #
 #
+
 CONTAINER='[scitran/dcm2niix]'
-echo -e "$CONTAINER  running..."
 
-# Set paths
+##############################################################################
+# Configure paths
+
 FLYWHEEL_BASE=/flywheel/v0
+DCM_OUTPUT_DIR=/flywheel/v0/output2
+OUTPUT_DIR=/flywheel/v0/output
+INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix_input
+CONFIG_FILE=$FLYWHEEL_BASE/config.json
+MANIFEST_FILE=$FLYWHEEL_BASE/manifest.json
 
-# Execute dcm2niix run script as Flywheel user
-$FLYWHEEL_BASE/run_dcm2niix
-exit_status=$?
+mkdir -p $DCM_OUTPUT_DIR
 
-# Exit using dcm2niix exit status
-echo -e "$CONTAINER  Exiting with exit=$exit_status"
-exit $exit_status
+if [[ ! -f $CONFIG_FILE ]]; then
+  CONFIG_FILE=$MANIFEST_FILE
+fi
+
+##############################################################################
+# Parse configuration
+
+# If the config file does not exist (i.e., local run) then parse the config
+# options and values from the manifest. Those variables can be found in the
+# manifest.json file within the `config` map.
+
+
+function parse_config {
+  # If config.json exists, then we parse config file  Otherwise we parse
+  # manifest.json.
+
+  CONFIG_FILE=$FLYWHEEL_BASE/config.json
+  MANIFEST_FILE=$FLYWHEEL_BASE/manifest.json
+
+  if [[ -f $CONFIG_FILE ]]; then
+    echo "$(cat $CONFIG_FILE | jq -r '.config.'$1)"
+  else
+    CONFIG_FILE=$MANIFEST_FILE
+    echo "$(cat $MANIFEST_FILE | jq -r '.config.'$1'.default')"
+  fi
+}
+
+decompress_dicoms="$(parse_config 'decompress_dicoms')"
+bids_sidecar="$(parse_config 'bids_sidecar')"
+merge2d="$(parse_config 'merge2d')"
+text_notes_private="$(parse_config 'text_notes_private')"
+crop="$(parse_config 'crop')"
+compress_nifti="$(parse_config 'compress_nifti')"
+filename="$(parse_config 'filename')"
+anonymize_bids="$(parse_config 'anonymize_bids')"
+ignore_derived="$(parse_config 'ignore_derived')"
+philips_scaling="$(parse_config 'philips_scaling')"
+single_file_mode="$(parse_config 'single_file_mode')"
+vol3D="$(parse_config 'vol3D')"
+convert_only_series="$(parse_config 'convert_only_series')"
+lossless_scaling="$(parse_config 'lossless_scaling')"
+ignore_errors="$(parse_config 'ignore_errors')"
+coil_combine="$(parse_config 'coil_combine')"
+
+
+##############################################################################
+# Check for 3Dvol option in config
+
+if [[ ${vol3D} == "true" ]]; then
+  compress_nifti=3;
+fi
+
+# Set filename config if 3D volumes will be output
+if [[ ${compress_nifti} == 3 ]]; then
+  echo "$CONTAINER  Outputs will be saved as uncompressed 3D volumes -- re-setting filename flag (-f %p_%s) to prevent overwriting."
+  filename=%p_%s
+fi
+
+##############################################################################
+# Handle INPUT.
+
+# The input to this Gear can be either a zip, a tgz, or a mounted volume
+# containing DICOMs. Below we handle all those cases.
+
+input_file=$(find $INPUT_DIR/* -not -path '*/\.*' -type f | head -1)
+dicom_input=''
+
+if [[ -z "$input_file" ]] ; then
+  echo -e "$CONTAINER No input file was found!"
+  exit 1
+fi
+
+# Prepare inputs: unzip, gunzip, or uncompressed
+if [[ "$input_file" == *.zip ]] ; then
+
+  echo "$CONTAINER  Unzipping $input_file"
+  unzip -q -B "$input_file" -d $INPUT_DIR
+
+  # Find unzipped sub-directory within the input directory
+  dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -not -path '__MACOSX' -type d | head -1)
+
+  # If there is no unzipped sub-directory, check for PAR/REC files at the top-level
+  if [[ -z "$dicom_input" ]]; then
+      dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
+      if [[ -n "$dicom_input" ]]; then
+        # Rename par/rec pair using generic names
+        dicom_input=$INPUT_DIR/inputfile.par
+        find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" -exec mv {} $dicom_input \;
+        find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.rec" -o -name "*.REC" -exec mv {} $INPUT_DIR/inputfile.rec \;
+      fi
+  fi
+
+  # Zip bomb: DICOMS are at the top level -- set dicom_input to INPUT_DIR
+  if [[ -z "$dicom_input" ]]; then
+    dicom_input=$INPUT_DIR
+  fi
+
+elif [[ "$input_file" == *.gz ]]; then
+  cd $INPUT_DIR
+  echo "$CONTAINER  Gunzipping $input_file"
+  gunzip -q "$input_file"
+  dicom_input=$(basename "$input_file" .gz)
+
+else
+  # Assume a directory containing dicoms was mounted in and pass it on (local docker execution)
+  dicom_input=$INPUT_DIR
+fi
+
+echo -e "$CONTAINER $dicom_input"
+
+##############################################################################
+# Decompression of DICOM files.
+
+# For some types of DIOCM files compression can be applied to the image data which
+# will cause dcm2niix to fail. We use a method recommended by Rorden below to
+# decompress these images prior to conversion. See:
+# https://www.nitrc.org/plugins/mwiki/index.php/dcm2nii:MainPage#Transfer_Syntaxes_and_Compressed_Images
+
+# Check config for decompress option
+if [[ $decompress_dicoms == 'true' ]]; then
+
+  # Get a list of the dicoms to be decompressed
+  dicom_files=$(find "$dicom_input" -type f)
+
+  # Decompress with gcdmconv in place (overwriting the compressed dicom)
+  echo -e "$CONTAINER  Decompressing DICOM files..."
+  for d in $dicom_files; do
+    gdcmconv --raw "$d" "$d"
+    if [[ $? != 0 ]]; then
+      echo -e "$CONTAINER  Error decompressing DICOMs!"
+      exit 1
+    fi
+  done
+fi
+
+##############################################################################
+# Sanitize dicom_input name
+
+# Remove '.dicom' from dicom_input (if it's a directory) for output filename.
+# Otherwise with default behavior (including the input folder in the output
+# filename) we have a '.dicom.nii.gz' extension, which is silly.
+
+if [[ -d "$dicom_input" ]]; then
+  NEW_DIR=$(dirname "$dicom_input")/$(basename "$dicom_input" .dicom)
+  if [[ "$dicom_input" != "$NEW_DIR" ]]; then
+    mv "$dicom_input" "$NEW_DIR"
+    dicom_input="$NEW_DIR"
+  fi
+fi
+
+# If the dirname of the input file is INPUT_DIR and thus the input directory will
+# be used for the file name output in dcm2niix, then set the filename to
+# something better, as suggested by CR.
+if ([[ $(dirname "$dicom_input") == "${INPUT_DIR}" ]] && [[ -f "$dicom_input" ]]) ||
+   [[ "$dicom_input" == "${INPUT_DIR}" ]];
+then
+   if [[ ${filename} == "%f" ]]; then
+     filename="%p_%s"
+     echo -e "${CONTAINER}  Setting filename format to %p_%s."
+   fi
+fi
+
+##############################################################################
+# Handle convert series
+
+if [[ ${convert_only_series} != "all" ]]; then
+  list=''
+  for i in ${convert_only_series}; do
+    list=${list:+$list}" -n "$i
+  done
+  convert_only_series="${list}"
+  echo "[$CONTAINER] Series to convert: $convert_only_series"
+fi
+
+##############################################################################
+# Run the dcm2niix algorithm passing forth the ENV vars with config
+
+if [[ ${bids_sidecar} == "o" ]]; then
+  dcm2niix -ba ${anonymize_bids} \
+           -b  o \
+           -f  "${filename}" \
+           -o  ${DCM_OUTPUT_DIR} \
+           "$dicom_input"
+
+else
+  dcm2niix -ba "${anonymize_bids}" \
+           -b  y \
+           -m  "${merge2d}" \
+           -t  "${text_notes_private}" \
+           -x  "${crop}" \
+           -z  "${compress_nifti}" \
+           -f  "${filename}" \
+           -i  "${ignore_derived}" \
+           -p  "${philips_scaling}" \
+           -s  "${single_file_mode}" \
+           "${convert_only_series}" \
+           -l  "${lossless_scaling}" \
+           -o  ${DCM_OUTPUT_DIR} \
+           "$dicom_input"
+fi
+dcm2niix_exit_code=$?
+
+if [[ $dcm2niix_exit_code == 0 ]] || [[ $ignore_errors == "true" ]]; then
+  mv $DCM_OUTPUT_DIR/* $OUTPUT_DIR/
+fi
+
+
+##############################################################################
+# Generate combined coil nifti file (optional)
+
+if [[ $dcm2niix_exit_code == 0 ]] && [[ $coil_combine == "true" ]]; then
+  echo "${CONTAINER}  Generating combined coil NIfTI..."
+  $FLYWHEEL_BASE/coil_combine.py $OUTPUT_DIR
+  combine_exit_code=$?
+
+  if [[ ${combine_exit_code} != 0 ]] && [[ $coil_combine == "false" ]]; then
+    echo "${CONTAINER}  Error generating combined coil data. Exiting(1)"
+    exit 1
+  fi
+
+fi
+
+##############################################################################
+# Generate file metadata from BIDS Sidecar
+
+# We will inject the information from the BIDS sidecar json file into the file
+# info map for each output file. First we check if the sidecar should be preserved,
+# based on the flag, then we execute the python code to generate it.
+TEMP_METADATA=/tmp/metadata/
+mkdir ${TEMP_METADATA}
+
+if [[ ${dcm2niix_exit_code} == 0 ]] || [[ ${ignore_errors} == "true" ]] ; then
+  bids_sidecar_files=$(find $OUTPUT_DIR -type f -name "*.json")
+
+  if [[ -n "${bids_sidecar_files}" ]]; then
+    echo "${CONTAINER}  Generating metadata from BIDS Sidecar"
+    find $OUTPUT_DIR -type f -name "*.json" -exec cp {} $TEMP_METADATA \;
+
+    # If the user did not want the sidecar, then remove it
+    if [[ ${bids_sidecar} == "n" ]] && [[ ${anonymize_bids} == "n" ]]; then
+      find $OUTPUT_DIR -type f -name "*.json" -exec rm {} \;
+    fi
+
+    # Generate metadata
+    ${FLYWHEEL_BASE}/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
+
+  else
+    echo -e "\n${CONTAINER}  No BIDS Sidecar could be found. Metadata will not be generated."
+  fi
+else
+  echo -e "\n${CONTAINER}  DCM2NIIX did not return zero. Metadata will not be generated."
+fi
+
+##############################################################################
+# Check exit status/outputs/permissions and exit
+
+if [[ $dcm2niix_exit_code == 0 ]]; then
+  chmod -R 777 $OUTPUT_DIR
+  echo -e "$CONTAINER  Success!"
+  exit 0
+elif [[ $dcm2niix_exit_code == 2 ]]; then
+  echo -e "$CONTAINER  No valid DICOM files found (dcm2niix exit status = $dcm2niix_exit_code). Conversion was not attempted. Exiting(17)."
+  exit 17
+else
+  echo -e "$CONTAINER  Error converting DICOMs! dcm2niix exit status = $dcm2niix_exit_code."
+  if [[ $ignore_errors == "false" ]]; then
+    echo -e "$CONTAINER  Removing outputs!"
+    rm -rf ${OUTPUT_DIR}/*
+  else
+    echo -e "$CONTAINER  WARNING: Ignoring errors (ignore_errors=0) and preserving outputs! Check DATA!"
+    chmod -R 777 $OUTPUT_DIR
+  fi
+  exit $dcm2niix_exit_code
+fi

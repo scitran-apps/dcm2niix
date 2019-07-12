@@ -46,9 +46,6 @@ WORKDIR ${FLYWHEEL}
 COPY run run_dcm2niix metadata.py coil_combine.py ./
 RUN chmod +x run metadata.py coil_combine.py
 
-# Create Flywheel User
-RUN adduser --disabled-password --gecos "Flywheel User" flywheel
-
 # Add manifest
 COPY manifest.json ${FLYWHEEL}/manifest.json
 
