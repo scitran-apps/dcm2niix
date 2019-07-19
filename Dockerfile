@@ -43,7 +43,7 @@ ENV FLYWHEEL /flywheel/v0
 WORKDIR ${FLYWHEEL}
 
 # Add executables
-COPY run run_dcm2niix metadata.py coil_combine.py ./
+COPY run  metadata.py coil_combine.py ./
 RUN chmod +x run metadata.py coil_combine.py
 
 # Add manifest
