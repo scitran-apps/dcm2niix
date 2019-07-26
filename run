@@ -260,7 +260,7 @@ if [[ ${dcm2niix_exit_code} == 0 ]] || [[ ${ignore_errors} == "true" ]] ; then
     fi
 
     # Generate metadata
-    ${FLYWHEEL_BASE}/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
+    python ${FLYWHEEL_BASE}/metadata.py ${OUTPUT_DIR} "${TEMP_METADATA}" ${CONFIG_FILE}
 
   else
     echo -e "\n${CONTAINER}  No BIDS Sidecar could be found. Metadata will not be generated."
