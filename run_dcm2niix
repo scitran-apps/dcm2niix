@@ -110,7 +110,7 @@ if [[ "$input_file" == *.zip ]] ; then
       fi
       # Handle zips without subdirectories
       if [[ -z "$dicom_input" ]]; then
-        if [[ ${filename} == "%f" ]]; then
+        if [[ ${filename} == *"%f"* ]]; then
           # count the non-zip files extracted
           file_count=$(find $INPUT_DIR -maxdepth 1 -type f -not -name *.zip | wc -l)
           if ((file_count > 0)); then
