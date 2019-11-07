@@ -108,6 +108,42 @@ if [[ "$input_file" == *.zip ]] ; then
         find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" -exec mv {} $dicom_input \;
         find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.rec" -o -name "*.REC" -exec mv {} $INPUT_DIR/inputfile.rec \;
       fi
+      # Handle zips without subdirectories
+      if [[ -z "$dicom_input" ]]; then
+        if [[ ${filename} == *"%f"* ]]; then
+          # count the non-zip files extracted
+          file_count=$(find $INPUT_DIR -maxdepth 1 -type f -not -name *.zip | wc -l)
+          if ((file_count > 0)); then
+            # get basename of file and remove .zip
+            new_folder=$(basename "$input_file" .zip)
+            # remove .dcm
+            new_folder=${new_folder/.dcm/}
+            # remove .dicom
+            new_folder=${new_folder/.dicom/}
+            # replace non-alphanumerics with _, avoiding repeat _
+            re='(.*)([^0-9a-zA-Z_]+|[_]{2,})(.*)'
+            while [[ $new_folder =~ $re ]]; do
+              new_folder="${BASH_REMATCH[1]}_${BASH_REMATCH[3]}"
+            done
+            # don't end on a _
+            re='(.*)[_]$'
+            if [[ $new_folder =~ $re ]]; then
+              new_folder=${BASH_REMATCH[1]}
+              echo $new_folder
+            fi
+            # create full path
+            new_folder="$INPUT_DIR"/"$new_folder"
+            echo "$input_file did not contain a subdirectory - moving $count extracted files to $new_folder"
+            # create the new directory
+            mkdir $new_folder
+
+            # move files that are not the zip to the new folder
+            find $INPUT_DIR -maxdepth 1 -type f -not -name *.zip -exec mv {} $new_folder \;
+            # try setting dicom_input again
+            dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -not -path '__MACOSX' -type d | head -1)
+          fi
+        fi
+      fi
   fi
 
   # Zip bomb: DICOMS are at the top level -- set dicom_input to INPUT_DIR
