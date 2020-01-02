@@ -163,6 +163,26 @@ else
   dicom_input=$INPUT_DIR
 fi
 
+
+##############################################################################################
+# Check to see if we need to remove dicoms from an incomplete volume for proper reconstruction
+if [[ ${remove_incomplete_volumes} == "true" ]]; then
+  # Run the python script
+  $FLYWHEEL_BASE/fix_dcm_vols.py $dicom_input
+
+  # If it found missing volumes and worked succesfully, there will be a new directory in the original dicom input dir
+  # called "corrected_dcm"
+  corrected_output=${dicom_input}/corrected_dcm
+
+  # If that exists, assume we're to use that as our new dicom input directory.
+  if [[ -d $corrected_output ]]; then
+    dicom_input=$corrected_output
+  fi
+fi
+
+
+
+
 echo -e "$CONTAINER $dicom_input"
 
 ##############################################################################
