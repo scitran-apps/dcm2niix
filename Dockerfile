@@ -42,6 +42,10 @@ RUN cmake -DUSE_OPENJPEG=ON -MY_DEBUG_GE=ON ../ && \
 ENV FLYWHEEL /flywheel/v0
 WORKDIR ${FLYWHEEL}
 
+# Copy in fix_dcm_vols
+ENV FIXDCMCOMMIT=918ee3327174c3c736e7b3839a556e0a709730c8
+RUN curl -#L https://raw.githubusercontent.com/VisionandCognition/NHP-Process-MRI/$FIXDCMCOMMIT/bin/fix_dcm_vols > fix_dcm_vols.py
+
 # Add executables
 COPY run run_dcm2niix metadata.py coil_combine.py ./
 RUN chmod +x run metadata.py coil_combine.py
