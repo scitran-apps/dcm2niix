@@ -113,6 +113,11 @@
       "description": "For sequences with individual coil data, saved as individual volumes, this option will save a NIfTI file with ONLY the combined coil data (i.e., the last volume). Default=False. Warning: We make no effort to check for independent coil data, we simply trust that if you have selcted this option you know what you are asking for.",
       "type": "boolean",
       "default": false
+    },
+    "remove_incomplete_volumes": {
+      "description": "Some 4D scans can be aborted mid-acquisition after any number of complete volume acquisitions.  The final volume may be incomplete, which causes problems during dcm2niix reconstruction.  Check this to scan the dicom archive before reconstruction and remove the files associated with the trailing incomplete volume.  All other volumes will be reconstructed as normal. ",
+      "type": "boolean",
+      "default": false
     }
   },
   "inputs": {
