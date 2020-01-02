@@ -1,1 +1,1 @@
-nibabel
+pydicom==1.3.0
