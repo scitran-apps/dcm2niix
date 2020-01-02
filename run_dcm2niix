@@ -61,6 +61,7 @@ convert_only_series="$(parse_config 'convert_only_series')"
 lossless_scaling="$(parse_config 'lossless_scaling')"
 ignore_errors="$(parse_config 'ignore_errors')"
 coil_combine="$(parse_config 'coil_combine')"
+remove_incomplete_volumes="$(parse_config 'remove_incomplete_volumes')"
 
 
 ##############################################################################

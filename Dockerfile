@@ -28,7 +28,9 @@ RUN apt-get update -qq \
     wget \
     jq \
     python \
-    python-nibabel
+    python-nibabel \
+    python-pydicom \
+    python-numpy
 
 # Compile DCM2NIIX from source
 ENV DCMCOMMIT=54cfd5176cb9f50c1c66d2f2e96beadf60e2edb4
