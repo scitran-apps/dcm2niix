@@ -169,20 +169,18 @@ fi
 if [[ ${remove_incomplete_volumes} == "true" ]]; then
   echo $dicom_input
   # Run the python script
-  echo "Running incomplete volume correction"
+  echo "$CONTAINER Running incomplete volume correction"
   python $FLYWHEEL_BASE/fix_dcm_vols.py ${dicom_input}
-  echo "Complete"
+  echo "$CONTAINER Complete"
   # If it found missing volumes and worked succesfully, there will be a new directory in the original dicom input dir
   # called "corrected_dcm"
-  echo "Checking for files"
+  echo "$CONTAINER Checking for files"
   corrected_output=${dicom_input}/orphan_dcm
   if [[ -d $corrected_output ]]; then
-    echo "removed incomplete volumes from scan"
+    echo "$CONTAINER removed incomplete volumes from scan"
+  else
+    echo "$CONTAINER Attempted to run incomplete volume correction, but no correction was made"
   fi
-
-fi
-
-
 
 
 echo -e "$CONTAINER $dicom_input"

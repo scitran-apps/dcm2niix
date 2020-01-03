@@ -58,12 +58,14 @@ if len(sys.argv) > 1:
 
             if os.path.isdir(dcmpath + '/orphan_dcm') is False:
                 os.mkdir(dcmpath + '/orphan_dcm')
-                #os.mkdir(dcmpath + '/corrected_dcm')
+                # Removed this part because it messes up flywheel naming of resulting .nii.gzs.
+                # os.mkdir(dcmpath + '/corrected_dcm')
 
             print('Moving ' + str(len(del_dcm)) + ' orphan dcm files to orphan_dcm')
             for f in del_dcm:
                 shutil.move(dcm_list[f],dcmpath + '/orphan_dcm/' + dcm_list[f].split('/')[-1])
 
+            # Removed this part because it messes up flywheel naming of resulting .nii.gzs.
             #print('Moving the rest of the dcm files to corrected_dcm')
             #for f in glob.glob(dcmpath + '/*.dcm'):
                 #shutil.move(f,dcmpath + '/corrected_dcm/')
@@ -73,6 +75,10 @@ if len(sys.argv) > 1:
     except:
 
         print('Failed to use TemporalPositionIdentifier DICOM header tag.')
+
+        # Attempted to make something to work with siemens...but this definitely does not work.  Still, don't want to
+        # Scrap it just yet...
+
         # vol_num =[];
         # for f in dcm_list:
         #     dcm_info = pydicom.filereader.dcmread(f,stop_before_pixels=True)
