@@ -39,6 +39,7 @@ RUN pip install -r requirements.txt && rm -rf /root/.cache/pip
 
 # Compile DCM2NIIX from source
 ENV DCMCOMMIT=54cfd5176cb9f50c1c66d2f2e96beadf60e2edb4
+#ENV DCMCOMMIT=f54be46667fce7994d2062e2623d12253c1bd968
 RUN curl -#L  https://github.com/rordenlab/dcm2niix/archive/$DCMCOMMIT.zip | bsdtar -xf- -C /usr/local
 WORKDIR /usr/local/dcm2niix-${DCMCOMMIT}/build
 RUN cmake -DUSE_OPENJPEG=ON -MY_DEBUG_GE=ON ../ && \
@@ -50,12 +51,11 @@ ENV FLYWHEEL /flywheel/v0
 WORKDIR ${FLYWHEEL}
 
 ## Copy in fix_dcm_vols
-#ENV FIXDCMCOMMIT=918ee3327174c3c736e7b3839a556e0a709730c8
-#RUN curl -#L https://raw.githubusercontent.com/VisionandCognition/NHP-Process-MRI/$FIXDCMCOMMIT/bin/fix_dcm_vols > fix_dcm_vols.py
-# Actually not doing this because I modified their code a little
+ENV FIXDCMCOMMIT=918ee3327174c3c736e7b3839a556e0a709730c8
+RUN curl -#L https://raw.githubusercontent.com/VisionandCognition/NHP-Process-MRI/$FIXDCMCOMMIT/bin/fix_dcm_vols > ${FLYWHEEL}/fix_dcm_vols.py
 
 # Add executables
-COPY run run_dcm2niix metadata.py coil_combine.py fix_dcm_vols.py ./
+COPY run run_dcm2niix metadata.py coil_combine.py ./
 RUN chmod +x run metadata.py coil_combine.py fix_dcm_vols.py
 
 # Create Flywheel User

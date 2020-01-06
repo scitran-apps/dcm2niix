@@ -168,8 +168,14 @@ fi
 # Check to see if we need to remove dicoms from an incomplete volume for proper reconstruction
 if [[ ${remove_incomplete_volumes} == "true" ]]; then
   echo $dicom_input
+
   # Run the python script
   echo "$CONTAINER Running incomplete volume correction"
+
+  echo dicoms before:
+  ls ${dicom_input}/*.dcm -1 | wc -l
+
+
   python $FLYWHEEL_BASE/fix_dcm_vols.py ${dicom_input}
   echo "$CONTAINER Complete"
   # If it found missing volumes and worked succesfully, there will be a new directory in the original dicom input dir
@@ -178,10 +184,26 @@ if [[ ${remove_incomplete_volumes} == "true" ]]; then
   corrected_output=${dicom_input}/orphan_dcm
   if [[ -d $corrected_output ]]; then
     echo "$CONTAINER removed incomplete volumes from scan"
+    # For the sake of flywheel's naming, remove the orphan dcms
+    rm -rf ${dicom_input}/orphan_dcm
+
+    # and remove any DCM's still in the original directory (should be zero if python code works correctly)
+    rm  ${dicom_input}/*.dcm
+
+    # move back all the corrected images to the original directory
+    mv ${dicom_input}/corrected_dcm/*.dcm ${dicom_input}
+
+    # Remove the corrected directory
+    rm -rf ${dicom_input}/corrected_dcm
+
+    # Give report of dicoms after.
+    echo dicoms after:
+    ls ${dicom_input}/*.dcm -1 | wc -l
+
   else
     echo "$CONTAINER Attempted to run incomplete volume correction, but no correction was made"
   fi
-
+fi
 
 echo -e "$CONTAINER $dicom_input"
 
