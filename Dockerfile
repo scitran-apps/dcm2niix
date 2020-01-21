@@ -57,7 +57,7 @@ RUN chmod +x ${FLYWHEEL}/fix_dcm_vols.py
 
 # Add executables
 COPY run run_dcm2niix metadata.py coil_combine.py ./
-RUN chmod +x run metadata.py coil_combine.py fix_dcm_vols.py
+RUN chmod 777 run metadata.py coil_combine.py fix_dcm_vols.py
 
 # Create Flywheel User
 RUN adduser --disabled-password --gecos "Flywheel User" flywheel
