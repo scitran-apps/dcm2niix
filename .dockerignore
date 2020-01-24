@@ -1,0 +1,7 @@
+.git
+.DS_Store
+output/
+output2/
+config.json
+work/
+input/
