@@ -8,9 +8,8 @@
   "source": "https://github.com/scitran-apps/dcm2niix",
   "license": "BSD-2-Clause",
   "flywheel": "0",
-  "version": "0.8.0_1.0.20190902",
+  "version": "0.9.0_1.0.20190902.rc1",
   "custom": {
-    "docker-image": "scitran/dcm2niix:0.8.0_1.0.20190902",
     "flywheel": {
       "uid": 1000,
       "gid": 1000,
@@ -18,7 +17,7 @@
     },
     "gear-builder": {
       "category": "converter",
-      "image": "scitran/dcm2niix:0.8.0_1.0.20190902"
+      "image": "scitran/dcm2niix:0.9.0_1.0.20190902.rc1"
     }
   },
   "config": {
@@ -122,11 +121,21 @@
   },
   "inputs": {
     "dcm2niix_input": {
-      "description": "Input file for dcm2niix. This can be either a DICOM archive ('.dicom.zip'), an enhanced DICOM file (gzipped or not, e.g., 'IM0001.gz', 'IM0001'), or a PAR/REC archive ('.parrec.zip')",
+      "description": "Input file for dcm2niix. This can be either a DICOM archive ('.dicom.zip'), an enhanced DICOM file (gzipped or not, e.g., 'IM0001.gz', 'IM0001'), or a PAR/REC archive ('.parrec.zip'). Additionally, you can provide an individual PAR file with this input, and the REC file below.",
       "base": "file",
       "type": {
         "enum": [
           "dicom",
+          "parrec"
+        ]
+      }
+    },
+    "rec_file_input": {
+      "description": "OPTIONAL: For indivdual par/rec files, choose the REC file as input here. At runtime this file will be added to the input directory and converted.",
+      "base": "file",
+      "optional": true,
+      "type": {
+        "enum": [
           "parrec"
         ]
       }

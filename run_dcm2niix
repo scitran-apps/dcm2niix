@@ -10,13 +10,16 @@ echo -e "$CONTAINER  user=$(whoami)"
 # Configure paths
 
 FLYWHEEL_BASE=/flywheel/v0
-DCM_OUTPUT_DIR=/flywheel/v0/output2
+DCM_OUTPUT_DIR=/tmp/output
+WORK_DIR=/tmp/work
 OUTPUT_DIR=/flywheel/v0/output
 INPUT_DIR=$FLYWHEEL_BASE/input/dcm2niix_input
+REC_DIR=$FLYWHEEL_BASE/input/rec_file_input
 CONFIG_FILE=$FLYWHEEL_BASE/config.json
 MANIFEST_FILE=$FLYWHEEL_BASE/manifest.json
 
 mkdir -p $DCM_OUTPUT_DIR
+mkdir -p $WORK_DIR
 
 if [[ ! -f $CONFIG_FILE ]]; then
   CONFIG_FILE=$MANIFEST_FILE
@@ -104,10 +107,7 @@ if [[ "$input_file" == *.zip ]] ; then
   if [[ -z "$dicom_input" ]]; then
       dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
       if [[ -n "$dicom_input" ]]; then
-        # Rename par/rec pair using generic names
-        dicom_input=$INPUT_DIR/inputfile.par
-        find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" -exec mv {} $dicom_input \;
-        find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.rec" -o -name "*.REC" -exec mv {} $INPUT_DIR/inputfile.rec \;
+        echo -e "$CONTAINER  Found PAR/REC data!"
       fi
       # Handle zips without subdirectories
       if [[ -z "$dicom_input" ]]; then
@@ -130,11 +130,11 @@ if [[ "$input_file" == *.zip ]] ; then
             re='(.*)[_]$'
             if [[ $new_folder =~ $re ]]; then
               new_folder=${BASH_REMATCH[1]}
-              echo $new_folder
+              echo "$CONTAINER  $new_folder"
             fi
             # create full path
             new_folder="$INPUT_DIR"/"$new_folder"
-            echo "$input_file did not contain a subdirectory - moving $count extracted files to $new_folder"
+            echo "$CONTAINER $input_file did not contain a subdirectory - moving $count extracted files to $new_folder"
             # create the new directory
             mkdir $new_folder
 
@@ -157,6 +157,22 @@ elif [[ "$input_file" == *.gz ]]; then
   echo "$CONTAINER  Gunzipping $input_file"
   gunzip -q "$input_file"
   dicom_input=$(basename "$input_file" .gz)
+
+# If the user provided a REC file, then we assume a PAR/REC pair. The basename of the
+# PAR file will used to create a parent directory for processing and naming - the
+# PAR/REC pair will then be copied to that directory and converted.
+elif [[ -d "$REC_DIR" ]]; then
+    echo -e "$CONTAINER  Found REC directory..."
+    cp $REC_DIR/* $WORK_DIR
+    rec_file=$(find $REC_DIR/* -not -path '*/\.*' -type f -name "*.rec" -o -name "*.REC" | head -1)
+    par_file=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
+    basename_file=$(basename "$(basename "$par_file" .par)" .PAR)
+    mkdir $WORK_DIR/"$basename_file"
+    if [[ -e "$rec_file" ]] && [[ -e "$par_file" ]]; then
+      cp "$rec_file" "$par_file" "$WORK_DIR/$basename_file"
+      echo -e "$CONTAINER  Found PAR/REC data [$basename_file]..."
+      dicom_input="$WORK_DIR/$basename_file"
+    fi
 
 else
   # Assume a directory containing dicoms was mounted in and pass it on (local docker execution)
