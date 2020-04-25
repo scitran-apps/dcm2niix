@@ -48,6 +48,25 @@ function parse_config {
   fi
 }
 
+function get_parrecdir()
+{
+  # input_parrec(<par_file> <rec_file>)
+  # The basename of the PAR file will used to create a parent directory for
+  # processing and naming the PAR/REC pair will then be copied to that directory
+  # and converted.
+  basename_file=$(basename "$(basename "$1" .par)" .PAR)
+  mkdir $WORK_DIR/"$basename_file"
+  if [[ -e "$1" ]] && [[ -e "$2" ]]; then
+    cp "$2" "$WORK_DIR/$basename_file/$basename_file".rec
+    cp "$1" "$WORK_DIR/$basename_file/$basename_file".par
+    local parrecdir="$WORK_DIR/$basename_file"
+  else
+    echo "$CONTAINER: ERROR $1 and/or $2 do not exist!"
+    exit 1
+  fi
+  echo "$parrecdir"
+}
+
 decompress_dicoms="$(parse_config 'decompress_dicoms')"
 bids_sidecar="$(parse_config 'bids_sidecar')"
 merge2d="$(parse_config 'merge2d')"
@@ -108,8 +127,11 @@ if [[ "$input_file" == *.zip ]] ; then
       dicom_input=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
       if [[ -n "$dicom_input" ]]; then
         echo -e "$CONTAINER  Found PAR/REC data!"
+        rec_file=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.rec" -o -name "*.REC" | head -1)
+        par_file=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
+        dicom_input=$(get_parrecdir "$par_file" "$rec_file")
       fi
-      # Handle zips without subdirectories
+      # Not PAR/REC: Handle zips without subdirectories
       if [[ -z "$dicom_input" ]]; then
         if [[ ${filename} == *"%f"* ]]; then
           # count the non-zip files extracted
@@ -126,7 +148,7 @@ if [[ "$input_file" == *.zip ]] ; then
             while [[ $new_folder =~ $re ]]; do
               new_folder="${BASH_REMATCH[1]}_${BASH_REMATCH[3]}"
             done
-            # don't end on a _
+            # don't end on a '_'
             re='(.*)[_]$'
             if [[ $new_folder =~ $re ]]; then
               new_folder=${BASH_REMATCH[1]}
@@ -158,22 +180,13 @@ elif [[ "$input_file" == *.gz ]]; then
   gunzip -q "$input_file"
   dicom_input=$(basename "$input_file" .gz)
 
-# If the user provided a REC file, then we assume a PAR/REC pair. The basename of the
-# PAR file will used to create a parent directory for processing and naming - the
-# PAR/REC pair will then be copied to that directory and converted.
+# If the user provided a REC file, then we assume a PAR/REC pair.
 elif [[ -d "$REC_DIR" ]]; then
     echo -e "$CONTAINER  Found REC directory..."
-    cp $REC_DIR/* $WORK_DIR
+    # cp $REC_DIR/* $WORK_DIR
     rec_file=$(find $REC_DIR/* -not -path '*/\.*' -type f -name "*.rec" -o -name "*.REC" | head -1)
     par_file=$(find $INPUT_DIR/* -not -path '*/\.*' -type f -name "*.par" -o -name "*.PAR" | head -1)
-    basename_file=$(basename "$(basename "$par_file" .par)" .PAR)
-    mkdir $WORK_DIR/"$basename_file"
-    if [[ -e "$rec_file" ]] && [[ -e "$par_file" ]]; then
-      cp "$rec_file" "$par_file" "$WORK_DIR/$basename_file"
-      echo -e "$CONTAINER  Found PAR/REC data [$basename_file]..."
-      dicom_input="$WORK_DIR/$basename_file"
-    fi
-
+    dicom_input=$(get_parrecdir "$par_file" "$rec_file")
 else
   # Assume a directory containing dicoms was mounted in and pass it on (local docker execution)
   dicom_input=$INPUT_DIR
