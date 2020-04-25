@@ -61,7 +61,7 @@ def metadata_gen(outbase, bids_sidecar_dir, config_file):
             if f.endswith('.nii.gz') or f.endswith('.nii'):
                 ftype = 'nifti'
                 bids_sidecar = os.path.join(bids_sidecar_dir, re.sub(r'(\.nii\.gz|\.nii)', '.json', f))
-                log.info(bids_sidecar)
+                log.info('  generated {}'.format(bids_sidecar))
                 if not os.path.isfile(bids_sidecar):
                     bids_sidecar = os.path.join(bids_sidecar_dir, re.sub(r'(\.nii\.gz|\.nii|_[0-9][0-9]\.nii\.gz|_[0-9][0-9]\.nii|_[0-9]\.nii\.gz|_[0-9]\.nii)', '.json', f))
                     log.info(bids_sidecar)

@@ -8,7 +8,7 @@
   "source": "https://github.com/scitran-apps/dcm2niix",
   "license": "BSD-2-Clause",
   "flywheel": "0",
-  "version": "0.9.0_1.0.20190902.rc1",
+  "version": "0.9.0_1.0.20190902.rc2",
   "custom": {
     "flywheel": {
       "uid": 1000,
@@ -17,7 +17,7 @@
     },
     "gear-builder": {
       "category": "converter",
-      "image": "scitran/dcm2niix:0.9.0_1.0.20190902.rc1"
+      "image": "scitran/dcm2niix:0.9.0_1.0.20190902"
     }
   },
   "config": {
