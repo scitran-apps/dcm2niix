@@ -34,7 +34,7 @@ COPY requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt && rm -rf /root/.cache/pip
 
 # Compile DCM2NIIX from source
-ENV DCMCOMMIT=f54be46667fce7994d2062e2623d12253c1bd968
+ENV DCMCOMMIT=485c387c93bbca3b29b93403dfde211c4bc39af6
 RUN curl -#L  https://github.com/rordenlab/dcm2niix/archive/$DCMCOMMIT.zip | bsdtar -xf- -C /usr/local
 WORKDIR /usr/local/dcm2niix-${DCMCOMMIT}/build
 RUN cmake -DUSE_OPENJPEG=ON -MY_DEBUG_GE=ON ../ && \
