@@ -10,7 +10,6 @@
   "flywheel": "0",
   "version": "0.8.0_1.0.20200331",
   "custom": {
-    "docker-image": "scitran/dcm2niix:0.8.0_1.0.20200331",
     "flywheel": {
       "uid": 1000,
       "gid": 1000,
