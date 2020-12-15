@@ -1,6 +1,8 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/scitran/dcm2niix.svg)](https://hub.docker.com/r/scitran/dcm2niix/)
 [![Docker Stars](https://img.shields.io/docker/stars/scitran/dcm2niix.svg)](https://hub.docker.com/r/scitran/dcm2niix/)
 
+### This repo has been archived. New development is here: https://github.com/flywheel-apps/dcm2niix
+
 ## scitran/dcm2niix
 
 Build context for a [Flywheel Gear](https://github.com/flywheel-io/gears/tree/master/spec) to execute ```dcm2niix```.
